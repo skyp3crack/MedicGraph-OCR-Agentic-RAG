@@ -12,3 +12,4 @@ __pycache__/
 
 # environment variables
 .env
+.tox

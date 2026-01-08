@@ -1,0 +1,16 @@
+pypdf
+pytesseract
+Pillow
+langchain==0.2.16
+langchain-core==0.2.40
+langchain-community==0.2.17
+langchain-openai==0.1.25
+langchain-google-genai==1.0.10
+langchain-text-splitters==0.2.4
+langsmith==0.1.120
+pydantic>=2.7.0
+python-dotenv
+fastapi
+uvicorn
+pdf2image
+chromadb
