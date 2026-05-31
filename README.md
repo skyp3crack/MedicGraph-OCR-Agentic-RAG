@@ -1,6 +1,6 @@
 <div align="center">
 
-<h1> MedicGraph â€” OCR + Agentic RAG</h1>
+<h1> MedicGraph OCR + Agentic RAG</h1>
 
 <p><strong>Intelligent Medical Report Analysis powered by OCR, Vector Search, and LLM-driven Retrieval-Augmented Generation</strong></p>
 
@@ -16,7 +16,7 @@
 
 <hr>
 
-<p><em>Upload a medical report PDF â†’ Extract text via OCR â†’ Chunk & embed into a vector store â†’ Ask natural-language questions and get grounded, context-aware answers from an LLM.</em></p>
+<p><em>Upload a medical report PDF  Extract text via OCR  Chunk & embed into a vector store  Ask natural-language questions and get grounded, context-aware answers from an LLM.</em></p>
 
 </div>
 
