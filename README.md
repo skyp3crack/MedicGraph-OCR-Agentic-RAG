@@ -1,4 +1,4 @@
-<![CDATA[<div align="center">
+<div align="center">
 
 <h1> MedicGraph â€” OCR + Agentic RAG</h1>
 
@@ -326,4 +326,3 @@ This project is licensed under the MIT License â€” see the [LICENSE](LICENS
 <p><em>MedicGraph  Because every medical report deserves intelligent analysis.</em></p>
 
 </div>
-]]>
