@@ -1,4 +1,4 @@
-﻿<![CDATA[<div align="center">
+<![CDATA[<div align="center">
 
 <h1> MedicGraph â€” OCR + Agentic RAG</h1>
 
