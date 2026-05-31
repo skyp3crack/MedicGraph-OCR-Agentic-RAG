@@ -1,26 +1,28 @@
-<![CDATA[<div align="center">
+﻿<![CDATA[<div align="center">
 
-# 🏥 MedicGraph — OCR + Agentic RAG
+<h1>ðŸ¥ MedicGraph â€” OCR + Agentic RAG</h1>
 
-**Intelligent Medical Report Analysis powered by OCR, Vector Search, and LLM-driven Retrieval-Augmented Generation**
+<p><strong>Intelligent Medical Report Analysis powered by OCR, Vector Search, and LLM-driven Retrieval-Augmented Generation</strong></p>
 
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Next.js](https://img.shields.io/badge/Next.js-16.1-000000?logo=next.js&logoColor=white)](https://nextjs.org)
-[![LangChain](https://img.shields.io/badge/LangChain-0.2-1C3C3C?logo=langchain&logoColor=white)](https://langchain.com)
-[![Gemini](https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?logo=google&logoColor=white)](https://ai.google.dev)
-[![ChromaDB](https://img.shields.io/badge/ChromaDB-Vector_Store-FF6F00)](https://www.trychroma.com)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+<p>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white" alt="Python"></a>
+  <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white" alt="FastAPI"></a>
+  <a href="https://nextjs.org"><img src="https://img.shields.io/badge/Next.js-16.1-000000?logo=next.js&logoColor=white" alt="Next.js"></a>
+  <a href="https://langchain.com"><img src="https://img.shields.io/badge/LangChain-0.2-1C3C3C?logo=langchain&logoColor=white" alt="LangChain"></a>
+  <a href="https://ai.google.dev"><img src="https://img.shields.io/badge/Gemini-2.5_Flash-4285F4?logo=google&logoColor=white" alt="Gemini"></a>
+  <a href="https://www.trychroma.com"><img src="https://img.shields.io/badge/ChromaDB-Vector_Store-FF6F00" alt="ChromaDB"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
+</p>
 
----
+<hr>
 
-*Upload a medical report PDF → Extract text via OCR → Chunk & embed into a vector store → Ask natural-language questions and get grounded, context-aware answers from an LLM.*
+<p><em>Upload a medical report PDF â†’ Extract text via OCR â†’ Chunk & embed into a vector store â†’ Ask natural-language questions and get grounded, context-aware answers from an LLM.</em></p>
 
 </div>
 
 ---
 
-## 📖 Table of Contents
+## ðŸ“– Table of Contents
 
 - [Overview](#-overview)
 - [Architecture](#-architecture)
@@ -40,63 +42,63 @@
 
 ---
 
-## 🔍 Overview
+## ðŸ” Overview
 
 **MedicGraph-OCR-Agentic-RAG** is an end-to-end system that transforms static medical report PDFs into an interactive, queryable knowledge base. It combines:
 
-1. **OCR & Text Extraction** — Extracts text from both selectable and scanned PDFs using `pypdf` and `pytesseract`.
-2. **Intelligent Chunking** — Splits extracted text into semantically meaningful chunks using LangChain's `RecursiveCharacterTextSplitter`.
-3. **Vector Embeddings** — Generates embeddings via OpenAI's `text-embedding-ada-002` (routed through OpenRouter) and stores them in ChromaDB.
-4. **RAG Chain** — Uses Google Gemini (`gemini-2.5-flash`) as the LLM backbone with LangChain's retrieval chain to answer questions grounded exclusively in the medical report's content.
+1. **OCR & Text Extraction** â€” Extracts text from both selectable and scanned PDFs using `pypdf` and `pytesseract`.
+2. **Intelligent Chunking** â€” Splits extracted text into semantically meaningful chunks using LangChain's `RecursiveCharacterTextSplitter`.
+3. **Vector Embeddings** â€” Generates embeddings via OpenAI's `text-embedding-ada-002` (routed through OpenRouter) and stores them in ChromaDB.
+4. **RAG Chain** â€” Uses Google Gemini (`gemini-2.5-flash`) as the LLM backbone with LangChain's retrieval chain to answer questions grounded exclusively in the medical report's content.
 
 > The system ensures **hallucination-safe responses** by instructing the LLM to only answer from the provided context, making it suitable for sensitive medical data interpretation.
 
 ---
 
-## 🏗 Architecture
+## ðŸ— Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        FRONTEND (Next.js 16)                    │
-│                    React 19 + TypeScript + Tailwind v4           │
-│                         [In Development]                        │
-└──────────────────────────────┬──────────────────────────────────┘
-                               │  HTTP / REST
-                               ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                      BACKEND (FastAPI + Uvicorn)                │
-│                                                                 │
-│  ┌─────────────┐   ┌──────────────┐   ┌──────────────────────┐ │
-│  │  PDF Upload  │──▶│  OCR Engine  │──▶│  Text Chunking       │ │
-│  │  Endpoint    │   │  pypdf +     │   │  RecursiveCharacter  │ │
-│  │              │   │  pytesseract │   │  TextSplitter        │ │
-│  └─────────────┘   └──────────────┘   └──────────┬───────────┘ │
-│                                                   │             │
-│  ┌──────────────────────────────────────────────┐ │             │
-│  │           Embedding Generation               │◀┘             │
-│  │     OpenAI text-embedding-ada-002            │               │
-│  │         (via OpenRouter API)                 │               │
-│  └──────────────────┬───────────────────────────┘               │
-│                     │                                           │
-│  ┌──────────────────▼───────────────────────────┐               │
-│  │            ChromaDB Vector Store             │               │
-│  │         Persistent local storage             │               │
-│  └──────────────────┬───────────────────────────┘               │
-│                     │                                           │
-│  ┌──────────────────▼───────────────────────────┐               │
-│  │           RAG Retrieval Chain                │               │
-│  │     LangChain RetrievalQA Pipeline           │               │
-│  │         ┌─────────────────────┐              │               │
-│  │         │  Google Gemini LLM  │              │               │
-│  │         │  gemini-2.5-flash   │              │               │
-│  │         └─────────────────────┘              │               │
-│  └──────────────────────────────────────────────┘               │
-└─────────────────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                        FRONTEND (Next.js 16)                    â”‚
+â”‚                    React 19 + TypeScript + Tailwind v4           â”‚
+â”‚                         [In Development]                        â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                               â”‚  HTTP / REST
+                               â–¼
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚                      BACKEND (FastAPI + Uvicorn)                â”‚
+â”‚                                                                 â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚
+â”‚  â”‚  PDF Upload  â”‚â”€â”€â–¶â”‚  OCR Engine  â”‚â”€â”€â–¶â”‚  Text Chunking       â”‚ â”‚
+â”‚  â”‚  Endpoint    â”‚   â”‚  pypdf +     â”‚   â”‚  RecursiveCharacter  â”‚ â”‚
+â”‚  â”‚              â”‚   â”‚  pytesseract â”‚   â”‚  TextSplitter        â”‚ â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚
+â”‚                                                   â”‚             â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚             â”‚
+â”‚  â”‚           Embedding Generation               â”‚â—€â”˜             â”‚
+â”‚  â”‚     OpenAI text-embedding-ada-002            â”‚               â”‚
+â”‚  â”‚         (via OpenRouter API)                 â”‚               â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜               â”‚
+â”‚                     â”‚                                           â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”               â”‚
+â”‚  â”‚            ChromaDB Vector Store             â”‚               â”‚
+â”‚  â”‚         Persistent local storage             â”‚               â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜               â”‚
+â”‚                     â”‚                                           â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”               â”‚
+â”‚  â”‚           RAG Retrieval Chain                â”‚               â”‚
+â”‚  â”‚     LangChain RetrievalQA Pipeline           â”‚               â”‚
+â”‚  â”‚         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”              â”‚               â”‚
+â”‚  â”‚         â”‚  Google Gemini LLM  â”‚              â”‚               â”‚
+â”‚  â”‚         â”‚  gemini-2.5-flash   â”‚              â”‚               â”‚
+â”‚  â”‚         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜              â”‚               â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜               â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
 ---
 
-## 🛠 Tech Stack
+## ðŸ›  Tech Stack
 
 ### Backend
 | Technology | Purpose | Version |
@@ -111,7 +113,7 @@
 | **Pillow / pdf2image** | Image processing for OCR | Latest |
 | **Google Gemini** | LLM (gemini-2.5-flash) | via `langchain-google-genai` |
 | **OpenAI Embeddings** | Text embeddings (ada-002) | via OpenRouter |
-| **Pydantic** | Data validation | ≥2.7.0 |
+| **Pydantic** | Data validation | â‰¥2.7.0 |
 | **python-dotenv** | Environment management | Latest |
 
 ### Frontend
@@ -124,58 +126,58 @@
 
 ---
 
-## 📁 Project Structure
+## ðŸ“ Project Structure
 
 ```
 MedicGraph-OCR-Agentic-RAG/
-│
-├── backend/                          # Python FastAPI backend
-│   ├── app/                          # Core application package
-│   │   ├── Agents/                   # 🔲 Agentic AI modules (planned)
-│   │   ├── Services/                 # Business logic services
-│   │   │   └── OCR.py                # OCR + RAG pipeline implementation
-│   │   ├── api/                      # 🔲 API route handlers (planned)
-│   │   ├── models/                   # 🔲 Database/ORM models (planned)
-│   │   └── schemas/                  # 🔲 Pydantic request/response schemas (planned)
-│   │
-│   ├── data/                         # Sample medical report PDFs
-│   │   └── 1.FORMAT-LAPORAN-PERUBATAN-1-2024-9-MOCK1.pdf
-│   │
-│   ├── test/                         # Test scripts & experiments
-│   │   ├── rag_pipeline_test.py      # ✅ End-to-end RAG pipeline test
-│   │   ├── list_gemini_models.py     # Utility: list available Gemini models
-│   │   └── chroma_db/                # Persisted ChromaDB vector store
-│   │       └── chroma.sqlite3        # SQLite-backed vector data
-│   │
-│   ├── main.py                       # FastAPI application entry point
-│   ├── requirements.txt              # Python dependencies
-│   ├── .env                          # Environment variables (gitignored)
-│   ├── .gitignore                    # Git exclusion rules
-│   └── readme.md                     # Backend-specific notes
-│
-├── frontend/                         # Next.js 16 frontend
-│   ├── app/                          # App Router pages
-│   │   ├── layout.tsx                # Root layout (Geist fonts)
-│   │   ├── page.tsx                  # Home page (default scaffold)
-│   │   ├── globals.css               # Global styles + Tailwind
-│   │   └── favicon.ico               # App icon
-│   │
-│   ├── public/                       # Static assets
-│   ├── package.json                  # Node.js dependencies
-│   ├── tsconfig.json                 # TypeScript configuration
-│   ├── next.config.ts                # Next.js configuration
-│   ├── postcss.config.mjs            # PostCSS config (Tailwind)
-│   ├── eslint.config.mjs             # ESLint configuration
-│   └── .gitignore                    # Git exclusion rules
-│
-└── README.md                         # ← You are here
+â”‚
+â”œâ”€â”€ backend/                          # Python FastAPI backend
+â”‚   â”œâ”€â”€ app/                          # Core application package
+â”‚   â”‚   â”œâ”€â”€ Agents/                   # ðŸ”² Agentic AI modules (planned)
+â”‚   â”‚   â”œâ”€â”€ Services/                 # Business logic services
+â”‚   â”‚   â”‚   â””â”€â”€ OCR.py                # OCR + RAG pipeline implementation
+â”‚   â”‚   â”œâ”€â”€ api/                      # ðŸ”² API route handlers (planned)
+â”‚   â”‚   â”œâ”€â”€ models/                   # ðŸ”² Database/ORM models (planned)
+â”‚   â”‚   â””â”€â”€ schemas/                  # ðŸ”² Pydantic request/response schemas (planned)
+â”‚   â”‚
+â”‚   â”œâ”€â”€ data/                         # Sample medical report PDFs
+â”‚   â”‚   â””â”€â”€ 1.FORMAT-LAPORAN-PERUBATAN-1-2024-9-MOCK1.pdf
+â”‚   â”‚
+â”‚   â”œâ”€â”€ test/                         # Test scripts & experiments
+â”‚   â”‚   â”œâ”€â”€ rag_pipeline_test.py      # âœ… End-to-end RAG pipeline test
+â”‚   â”‚   â”œâ”€â”€ list_gemini_models.py     # Utility: list available Gemini models
+â”‚   â”‚   â””â”€â”€ chroma_db/                # Persisted ChromaDB vector store
+â”‚   â”‚       â””â”€â”€ chroma.sqlite3        # SQLite-backed vector data
+â”‚   â”‚
+â”‚   â”œâ”€â”€ main.py                       # FastAPI application entry point
+â”‚   â”œâ”€â”€ requirements.txt              # Python dependencies
+â”‚   â”œâ”€â”€ .env                          # Environment variables (gitignored)
+â”‚   â”œâ”€â”€ .gitignore                    # Git exclusion rules
+â”‚   â””â”€â”€ readme.md                     # Backend-specific notes
+â”‚
+â”œâ”€â”€ frontend/                         # Next.js 16 frontend
+â”‚   â”œâ”€â”€ app/                          # App Router pages
+â”‚   â”‚   â”œâ”€â”€ layout.tsx                # Root layout (Geist fonts)
+â”‚   â”‚   â”œâ”€â”€ page.tsx                  # Home page (default scaffold)
+â”‚   â”‚   â”œâ”€â”€ globals.css               # Global styles + Tailwind
+â”‚   â”‚   â””â”€â”€ favicon.ico               # App icon
+â”‚   â”‚
+â”‚   â”œâ”€â”€ public/                       # Static assets
+â”‚   â”œâ”€â”€ package.json                  # Node.js dependencies
+â”‚   â”œâ”€â”€ tsconfig.json                 # TypeScript configuration
+â”‚   â”œâ”€â”€ next.config.ts                # Next.js configuration
+â”‚   â”œâ”€â”€ postcss.config.mjs            # PostCSS config (Tailwind)
+â”‚   â”œâ”€â”€ eslint.config.mjs             # ESLint configuration
+â”‚   â””â”€â”€ .gitignore                    # Git exclusion rules
+â”‚
+â””â”€â”€ README.md                         # â† You are here
 ```
 
-> **Legend:** ✅ = Implemented | 🔲 = Scaffolded / Planned
+> **Legend:** âœ… = Implemented | ðŸ”² = Scaffolded / Planned
 
 ---
 
-## 🚀 Getting Started
+## ðŸš€ Getting Started
 
 ### Prerequisites
 
@@ -231,23 +233,23 @@ The frontend will be available at `http://localhost:3000` and the backend API at
 
 ---
 
-## 🔐 Environment Variables
+## ðŸ” Environment Variables
 
 Create a `.env` file in the `backend/` directory:
 
 ```env
-# OpenRouter API key — used for OpenAI-compatible embedding requests
+# OpenRouter API key â€” used for OpenAI-compatible embedding requests
 OPENROUTER_API_KEY=sk-or-v1-your-openrouter-key-here
 
-# Google Gemini API key — used for LLM inference
+# Google Gemini API key â€” used for LLM inference
 GEMINI_API_KEY=AIzaSy-your-gemini-key-here
 ```
 
-> ⚠️ **Security:** Never commit `.env` files to version control. Both `.gitignore` files already exclude them.
+> âš ï¸ **Security:** Never commit `.env` files to version control. Both `.gitignore` files already exclude them.
 
 ---
 
-## 💡 Usage
+## ðŸ’¡ Usage
 
 ### Running the RAG Pipeline Test
 
@@ -278,20 +280,20 @@ python list_gemini_models.py
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/` | Health check — returns `{"Hello": "World"}` |
+| `GET` | `/` | Health check â€” returns `{"Hello": "World"}` |
 | `GET` | `/items/{item_id}` | Sample parameterized endpoint |
 
-> 📌 The FastAPI server currently runs with scaffold endpoints. Medical report upload and query endpoints are planned.
+> ðŸ“Œ The FastAPI server currently runs with scaffold endpoints. Medical report upload and query endpoints are planned.
 
 ---
 
-## 🔬 RAG Pipeline Deep Dive
+## ðŸ”¬ RAG Pipeline Deep Dive
 
 The core intelligence of this project lives in the Retrieval-Augmented Generation pipeline:
 
 ### Step 1: Document Ingestion & OCR
 ```
-PDF → pypdf (selectable text) → fallback to pytesseract (scanned pages)
+PDF â†’ pypdf (selectable text) â†’ fallback to pytesseract (scanned pages)
 ```
 
 ### Step 2: Text Chunking
@@ -303,70 +305,70 @@ RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
 ### Step 3: Embedding & Storage
 ```
-Text Chunks → OpenAI ada-002 Embeddings → ChromaDB (persistent SQLite)
+Text Chunks â†’ OpenAI ada-002 Embeddings â†’ ChromaDB (persistent SQLite)
 ```
 
 ### Step 4: Retrieval & Generation
 ```
-User Question → Vector Similarity Search → Top-K Relevant Chunks → Gemini LLM → Grounded Answer
+User Question â†’ Vector Similarity Search â†’ Top-K Relevant Chunks â†’ Gemini LLM â†’ Grounded Answer
 ```
 
 ### System Prompt (Medical Expert)
 ```
-You are an AI expert assistant in medical reports. Answer questions only based on 
-provided Context. If the answer is not in the context, just state you don't have 
+You are an AI expert assistant in medical reports. Answer questions only based on
+provided Context. If the answer is not in the context, just state you don't have
 enough information.
 ```
 
-This constraint ensures the LLM never fabricates medical information — a critical safety requirement.
+This constraint ensures the LLM never fabricates medical information â€” a critical safety requirement.
 
 ---
 
-## 📊 Current Project Status
+## ðŸ“Š Current Project Status
 
 | Component | Status | Notes |
 |---|---|---|
-| **OCR Text Extraction** | ✅ Working | `pypdf` for selectable text; pytesseract fallback scaffolded |
-| **Text Chunking** | ✅ Working | LangChain `RecursiveCharacterTextSplitter` |
-| **Vector Embeddings** | ✅ Working | OpenAI `ada-002` via OpenRouter |
-| **ChromaDB Vector Store** | ✅ Working | Persistent local storage with SQLite |
-| **LLM Integration** | ✅ Working | Google Gemini `2.5-flash` via LangChain |
-| **RAG Retrieval Chain** | ✅ Working | Full pipeline tested in `rag_pipeline_test.py` |
-| **FastAPI Server** | 🔶 Scaffold | Basic server running; endpoints not yet wired to RAG |
-| **API Route Handlers** | 🔲 Planned | `app/api/` directory created but empty |
-| **Pydantic Schemas** | 🔲 Planned | `app/schemas/` directory created but empty |
-| **Data Models** | 🔲 Planned | `app/models/` directory created but empty |
-| **Agentic AI Modules** | 🔲 Planned | `app/Agents/` directory created but empty |
-| **Frontend UI** | 🔶 Scaffold | Default Next.js 16 template; no custom UI yet |
-| **Frontend ↔ Backend** | 🔲 Planned | No API integration between frontend and backend |
-| **Scanned PDF OCR** | 🔶 Partial | Code scaffolded but `pdf2image` integration commented out |
-| **Authentication** | 🔲 Not Started | — |
-| **Docker Support** | 🔲 Not Started | — |
-| **Unit Tests** | 🔲 Not Started | Only integration test exists |
+| **OCR Text Extraction** | âœ… Working | `pypdf` for selectable text; pytesseract fallback scaffolded |
+| **Text Chunking** | âœ… Working | LangChain `RecursiveCharacterTextSplitter` |
+| **Vector Embeddings** | âœ… Working | OpenAI `ada-002` via OpenRouter |
+| **ChromaDB Vector Store** | âœ… Working | Persistent local storage with SQLite |
+| **LLM Integration** | âœ… Working | Google Gemini `2.5-flash` via LangChain |
+| **RAG Retrieval Chain** | âœ… Working | Full pipeline tested in `rag_pipeline_test.py` |
+| **FastAPI Server** | ðŸ”¶ Scaffold | Basic server running; endpoints not yet wired to RAG |
+| **API Route Handlers** | ðŸ”² Planned | `app/api/` directory created but empty |
+| **Pydantic Schemas** | ðŸ”² Planned | `app/schemas/` directory created but empty |
+| **Data Models** | ðŸ”² Planned | `app/models/` directory created but empty |
+| **Agentic AI Modules** | ðŸ”² Planned | `app/Agents/` directory created but empty |
+| **Frontend UI** | ðŸ”¶ Scaffold | Default Next.js 16 template; no custom UI yet |
+| **Frontend â†” Backend** | ðŸ”² Planned | No API integration between frontend and backend |
+| **Scanned PDF OCR** | ðŸ”¶ Partial | Code scaffolded but `pdf2image` integration commented out |
+| **Authentication** | ðŸ”² Not Started | â€” |
+| **Docker Support** | ðŸ”² Not Started | â€” |
+| **Unit Tests** | ðŸ”² Not Started | Only integration test exists |
 
 ---
 
-## 🗺 Roadmap
+## ðŸ—º Roadmap
 
-### Phase 1 — Core API Integration *(Current Focus)*
+### Phase 1 â€” Core API Integration *(Current Focus)*
 - [ ] Wire OCR + RAG pipeline into FastAPI endpoints
 - [ ] Create `POST /upload` endpoint for PDF ingestion
 - [ ] Create `POST /query` endpoint for natural-language questions
 - [ ] Define Pydantic schemas for request/response validation
 - [ ] Add proper error handling and HTTP status codes
 
-### Phase 2 — Frontend Development
+### Phase 2 â€” Frontend Development
 - [ ] Build PDF upload interface with drag-and-drop
 - [ ] Build chat/query interface for medical report Q&A
 - [ ] Display source chunks alongside LLM answers
 - [ ] Add loading states and error handling
 
-### Phase 3 — Agentic AI Layer
+### Phase 3 â€” Agentic AI Layer
 - [ ] Implement multi-step medical reasoning agents
 - [ ] Add document comparison capabilities (compare multiple reports)
 - [ ] Build knowledge graph from extracted medical entities
 
-### Phase 4 — Production Hardening
+### Phase 4 â€” Production Hardening
 - [ ] Add authentication and authorization
 - [ ] Dockerize backend and frontend
 - [ ] Add comprehensive unit and integration tests
@@ -376,7 +378,7 @@ This constraint ensures the LLM never fabricates medical information — a criti
 
 ---
 
-## 🤝 Contributing
+## ðŸ¤ Contributing
 
 Contributions are welcome! Please follow these steps:
 
@@ -390,17 +392,17 @@ Please ensure your code follows the existing project structure and includes appr
 
 ---
 
-## 📄 License
+## ðŸ“„ License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License â€” see the [LICENSE](LICENSE) file for details.
 
 ---
 
 <div align="center">
 
-**Built with ❤️ for smarter healthcare**
+<p><strong>Built with â¤ï¸ for smarter healthcare</strong></p>
 
-*MedicGraph — Because every medical report deserves intelligent analysis.*
+<p><em>MedicGraph â€” Because every medical report deserves intelligent analysis.</em></p>
 
 </div>
 ]]>
