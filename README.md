@@ -1,6 +1,6 @@
 ﻿<![CDATA[<div align="center">
 
-<h1>ðŸ¥ MedicGraph â€” OCR + Agentic RAG</h1>
+<h1> MedicGraph â€” OCR + Agentic RAG</h1>
 
 <p><strong>Intelligent Medical Report Analysis powered by OCR, Vector Search, and LLM-driven Retrieval-Augmented Generation</strong></p>
 
@@ -57,48 +57,11 @@
 
 ## ðŸ— Architecture
 
-```
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                        FRONTEND (Next.js 16)                    â”‚
-â”‚                    React 19 + TypeScript + Tailwind v4           â”‚
-â”‚                         [In Development]                        â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-                               â”‚  HTTP / REST
-                               â–¼
-â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚                      BACKEND (FastAPI + Uvicorn)                â”‚
-â”‚                                                                 â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”   â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚
-â”‚  â”‚  PDF Upload  â”‚â”€â”€â–¶â”‚  OCR Engine  â”‚â”€â”€â–¶â”‚  Text Chunking       â”‚ â”‚
-â”‚  â”‚  Endpoint    â”‚   â”‚  pypdf +     â”‚   â”‚  RecursiveCharacter  â”‚ â”‚
-â”‚  â”‚              â”‚   â”‚  pytesseract â”‚   â”‚  TextSplitter        â”‚ â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚
-â”‚                                                   â”‚             â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚             â”‚
-â”‚  â”‚           Embedding Generation               â”‚â—€â”˜             â”‚
-â”‚  â”‚     OpenAI text-embedding-ada-002            â”‚               â”‚
-â”‚  â”‚         (via OpenRouter API)                 â”‚               â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜               â”‚
-â”‚                     â”‚                                           â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”               â”‚
-â”‚  â”‚            ChromaDB Vector Store             â”‚               â”‚
-â”‚  â”‚         Persistent local storage             â”‚               â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜               â”‚
-â”‚                     â”‚                                           â”‚
-â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”               â”‚
-â”‚  â”‚           RAG Retrieval Chain                â”‚               â”‚
-â”‚  â”‚     LangChain RetrievalQA Pipeline           â”‚               â”‚
-â”‚  â”‚         â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”              â”‚               â”‚
-â”‚  â”‚         â”‚  Google Gemini LLM  â”‚              â”‚               â”‚
-â”‚  â”‚         â”‚  gemini-2.5-flash   â”‚              â”‚               â”‚
-â”‚  â”‚         â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜              â”‚               â”‚
-â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜               â”‚
-â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
-```
+
 
 ---
 
-## ðŸ›  Tech Stack
+##  Tech Stack
 
 ### Backend
 | Technology | Purpose | Version |
@@ -126,54 +89,12 @@
 
 ---
 
-## ðŸ“ Project Structure
+##  Project Structure
 
 ```
-MedicGraph-OCR-Agentic-RAG/
-â”‚
-â”œâ”€â”€ backend/                          # Python FastAPI backend
-â”‚   â”œâ”€â”€ app/                          # Core application package
-â”‚   â”‚   â”œâ”€â”€ Agents/                   # ðŸ”² Agentic AI modules (planned)
-â”‚   â”‚   â”œâ”€â”€ Services/                 # Business logic services
-â”‚   â”‚   â”‚   â””â”€â”€ OCR.py                # OCR + RAG pipeline implementation
-â”‚   â”‚   â”œâ”€â”€ api/                      # ðŸ”² API route handlers (planned)
-â”‚   â”‚   â”œâ”€â”€ models/                   # ðŸ”² Database/ORM models (planned)
-â”‚   â”‚   â””â”€â”€ schemas/                  # ðŸ”² Pydantic request/response schemas (planned)
-â”‚   â”‚
-â”‚   â”œâ”€â”€ data/                         # Sample medical report PDFs
-â”‚   â”‚   â””â”€â”€ 1.FORMAT-LAPORAN-PERUBATAN-1-2024-9-MOCK1.pdf
-â”‚   â”‚
-â”‚   â”œâ”€â”€ test/                         # Test scripts & experiments
-â”‚   â”‚   â”œâ”€â”€ rag_pipeline_test.py      # âœ… End-to-end RAG pipeline test
-â”‚   â”‚   â”œâ”€â”€ list_gemini_models.py     # Utility: list available Gemini models
-â”‚   â”‚   â””â”€â”€ chroma_db/                # Persisted ChromaDB vector store
-â”‚   â”‚       â””â”€â”€ chroma.sqlite3        # SQLite-backed vector data
-â”‚   â”‚
-â”‚   â”œâ”€â”€ main.py                       # FastAPI application entry point
-â”‚   â”œâ”€â”€ requirements.txt              # Python dependencies
-â”‚   â”œâ”€â”€ .env                          # Environment variables (gitignored)
-â”‚   â”œâ”€â”€ .gitignore                    # Git exclusion rules
-â”‚   â””â”€â”€ readme.md                     # Backend-specific notes
-â”‚
-â”œâ”€â”€ frontend/                         # Next.js 16 frontend
-â”‚   â”œâ”€â”€ app/                          # App Router pages
-â”‚   â”‚   â”œâ”€â”€ layout.tsx                # Root layout (Geist fonts)
-â”‚   â”‚   â”œâ”€â”€ page.tsx                  # Home page (default scaffold)
-â”‚   â”‚   â”œâ”€â”€ globals.css               # Global styles + Tailwind
-â”‚   â”‚   â””â”€â”€ favicon.ico               # App icon
-â”‚   â”‚
-â”‚   â”œâ”€â”€ public/                       # Static assets
-â”‚   â”œâ”€â”€ package.json                  # Node.js dependencies
-â”‚   â”œâ”€â”€ tsconfig.json                 # TypeScript configuration
-â”‚   â”œâ”€â”€ next.config.ts                # Next.js configuration
-â”‚   â”œâ”€â”€ postcss.config.mjs            # PostCSS config (Tailwind)
-â”‚   â”œâ”€â”€ eslint.config.mjs             # ESLint configuration
-â”‚   â””â”€â”€ .gitignore                    # Git exclusion rules
-â”‚
-â””â”€â”€ README.md                         # â† You are here
 ```
 
-> **Legend:** âœ… = Implemented | ðŸ”² = Scaffolded / Planned
+> **Legend:**Implemented | = Scaffolded / Planned
 
 ---
 
@@ -233,23 +154,23 @@ The frontend will be available at `http://localhost:3000` and the backend API at
 
 ---
 
-## ðŸ” Environment Variables
+##  Environment Variables
 
 Create a `.env` file in the `backend/` directory:
 
 ```env
-# OpenRouter API key â€” used for OpenAI-compatible embedding requests
+# OpenRouter API key  used for OpenAI-compatible embedding requests
 OPENROUTER_API_KEY=sk-or-v1-your-openrouter-key-here
 
-# Google Gemini API key â€” used for LLM inference
+# Google Gemini API key  used for LLM inference
 GEMINI_API_KEY=AIzaSy-your-gemini-key-here
 ```
 
-> âš ï¸ **Security:** Never commit `.env` files to version control. Both `.gitignore` files already exclude them.
+>  **Security:** Never commit `.env` files to version control. Both `.gitignore` files already exclude them.
 
 ---
 
-## ðŸ’¡ Usage
+##  Usage
 
 ### Running the RAG Pipeline Test
 
@@ -400,9 +321,9 @@ This project is licensed under the MIT License â€” see the [LICENSE](LICENS
 
 <div align="center">
 
-<p><strong>Built with â¤ï¸ for smarter healthcare</strong></p>
+<p><strong>Built with  for smarter healthcare</strong></p>
 
-<p><em>MedicGraph â€” Because every medical report deserves intelligent analysis.</em></p>
+<p><em>MedicGraph  Because every medical report deserves intelligent analysis.</em></p>
 
 </div>
 ]]>
