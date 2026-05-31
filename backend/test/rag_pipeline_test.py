@@ -2,8 +2,6 @@
 # rag_pipeline_test.py
 # --- Imports ---
 from pypdf import PdfReader
-import pytesseract
-from PIL import Image
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import Chroma
@@ -16,13 +14,6 @@ from dotenv import load_dotenv
 load_dotenv() # This loads the variables from .env into os.environ
 
 
-# --- Tesseract-OCR Engine Path (CRITICAL for OCR if needed) ---
-# Uncomment and set this if Tesseract is not in your system's PATH
-# pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe' # Windows example
-
-# --- Environment Variables (for local testing, use python-dotenv in real apps) ---
-# For a quick test, you can set them directly here, but it's not recommended for production.
-# os.environ["OPENROUTER_API_KEY"] = "YOUR_OPENROUTER_API_KEY" # If using OpenRouter
 
 # --- 1. OCR and Text Extraction ---
 def extract_text_from_pdf(pdf_path):
@@ -45,8 +36,6 @@ def extract_text_from_pdf(pdf_path):
     return text
 
 # --- PDF File Path ---
-# Adjust this path based on where you run the script from.
-# If this script is in 'backend/app/Services/' and PDF is in 'backend/data/'
 pdf_file_name = "1.FORMAT-LAPORAN-PERUBATAN-1-2024-9-MOCK1.pdf"
 # Construct absolute path to the data directory regardless of where script is run from
 pdf_path = os.path.join(os.path.dirname(__file__), "..", "data", pdf_file_name)
@@ -80,9 +69,6 @@ print(chunks[0].page_content)
 
 
 # --- 3. Embeddings Model Configuration ---
-# Using a standard OpenAI embedding model for reliability.
-# If you want to use OpenRouter with Qwen, you'd need to verify its specific integration
-# or use a custom LangChain component if OpenAIEmbeddings doesn't support it directly.
 embeddings_model = OpenAIEmbeddings(
     model="text-embedding-ada-002", # Standard OpenAI embedding model
     openai_api_base="https://openrouter.ai/api/v1", 
@@ -115,6 +101,7 @@ prompt = ChatPromptTemplate.from_messages([
     ("human", "Context: {context}\nQuestion: {input}")
 ])
 
+#search_kwargs={"k": 10} for more relevant docs
 
 # --- 7. Create RAG Chain ---
 document_chain = create_stuff_documents_chain(llm, prompt)
@@ -127,7 +114,7 @@ retrieval_chain = create_retrieval_chain(
 
 # --- 8. Test RAG ---
 print("\n--- Testing RAG ---")
-question_1 = "What is the patient's name and diagnosis?"
+question_1 = "What is the patient's name and age ?"
 response_1 = retrieval_chain.invoke({"input": question_1})
 print(f"Question: {question_1}")
 print(f"Answer: {response_1['answer']}")

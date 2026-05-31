@@ -1,0 +1,16 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "basic",
+  "include": [
+    "app",
+    "test",
+    "main.py"
+  ],
+  "exclude": [
+    ".venv",
+    ".tox",
+    "__pycache__"
+  ]
+}
