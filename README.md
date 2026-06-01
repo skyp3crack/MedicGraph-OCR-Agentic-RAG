@@ -16,13 +16,13 @@
 
 <hr>
 
-<p><em>Upload a medical report PDF  Extract text via OCR  Chunk & embed into a vector store  Ask natural-language questions and get grounded, context-aware answers from an LLM.</em></p>
+<p><em>Upload a medical report PDF &rarr; Extract text via OCR &rarr; Chunk & embed into a vector store &rarr; Ask natural-language questions and get grounded, context-aware answers from an LLM.</em></p>
 
 </div>
 
 ---
 
-## ðŸ“– Table of Contents
+## 📖 Table of Contents
 
 - [Overview](#-overview)
 - [Architecture](#-architecture)
@@ -33,6 +33,7 @@
   - [Backend Setup](#1-backend-setup)
   - [Frontend Setup](#2-frontend-setup)
 - [Environment Variables](#-environment-variables)
+- [API Reference](#-api-reference)
 - [Usage](#-usage)
 - [RAG Pipeline Deep Dive](#-rag-pipeline-deep-dive)
 - [Current Project Status](#-current-project-status)
@@ -42,42 +43,69 @@
 
 ---
 
-## ðŸ” Overview
+## 🔍 Overview
 
 **MedicGraph-OCR-Agentic-RAG** is an end-to-end system that transforms static medical report PDFs into an interactive, queryable knowledge base. It combines:
 
-1. **OCR & Text Extraction** â€” Extracts text from both selectable and scanned PDFs using `pypdf` and `pytesseract`.
-2. **Intelligent Chunking** â€” Splits extracted text into semantically meaningful chunks using LangChain's `RecursiveCharacterTextSplitter`.
-3. **Vector Embeddings** â€” Generates embeddings via OpenAI's `text-embedding-ada-002` (routed through OpenRouter) and stores them in ChromaDB.
-4. **RAG Chain** â€” Uses Google Gemini (`gemini-2.5-flash`) as the LLM backbone with LangChain's retrieval chain to answer questions grounded exclusively in the medical report's content.
+1. **OCR & Text Extraction** — Extracts text from both selectable and scanned PDFs using `pypdf` with `pytesseract` fallback support.
+2. **Intelligent Chunking** — Splits extracted text into semantically meaningful chunks using LangChain's `RecursiveCharacterTextSplitter`.
+3. **Vector Embeddings** — Generates embeddings via OpenAI's `text-embedding-ada-002` (routed through OpenRouter) and stores them in ChromaDB.
+4. **RAG Chain** — Uses Google Gemini (`gemini-2.5-flash`) as the LLM backbone with LangChain's retrieval chain to answer questions grounded exclusively in the medical report's content.
 
 > The system ensures **hallucination-safe responses** by instructing the LLM to only answer from the provided context, making it suitable for sensitive medical data interpretation.
 
 ---
 
-## ðŸ— Architecture
+## 🏗 Architecture
 
-
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Frontend (Next.js 16)                       │
+│                   http://localhost:3000                          │
+└──────────────────────────┬──────────────────────────────────────┘
+                           │ HTTP (REST)
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                   FastAPI Backend (:8000)                        │
+│  ┌───────────┐  ┌──────────────┐  ┌──────────────────────────┐ │
+│  │ /api/upload│  │ /api/query   │  │ /api/health              │ │
+│  └─────┬─────┘  └──────┬───────┘  └──────────────────────────┘ │
+│        │               │                                        │
+│  ┌─────▼───────────────▼────────────────────────────────────┐  │
+│  │              RAG Service (Orchestrator)                    │  │
+│  │  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐  │  │
+│  │  │ OCR Service  │  │ Embedding    │  │ LLM (Gemini)   │  │  │
+│  │  │ (pypdf +     │  │ Service      │  │ via LangChain  │  │  │
+│  │  │  tesseract)  │  │ (ada-002)    │  │                │  │  │
+│  │  └─────────────┘  └──────┬───────┘  └────────────────┘  │  │
+│  └──────────────────────────┼───────────────────────────────┘  │
+│                             │                                   │
+│                    ┌────────▼────────┐                          │
+│                    │   ChromaDB      │                          │
+│                    │  (Vector Store) │                          │
+│                    └─────────────────┘                          │
+└─────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-##  Tech Stack
+## ⚙ Tech Stack
 
 ### Backend
 | Technology | Purpose | Version |
 |---|---|---|
 | **Python** | Core runtime | 3.10+ |
-| **FastAPI** | REST API framework | Latest |
+| **FastAPI** | REST API framework with auto-docs | ≥0.100 |
 | **Uvicorn** | ASGI server | Latest |
-| **LangChain** | RAG orchestration framework | 0.2.16 |
-| **ChromaDB** | Vector database (persistent) | Latest |
-| **pypdf** | PDF text extraction | Latest |
-| **pytesseract** | OCR for scanned PDFs | Latest |
+| **LangChain** | RAG orchestration framework | 0.2.x |
+| **ChromaDB** | Vector database (persistent) | ≥0.4.0 |
+| **pypdf** | PDF text extraction | ≥4.0.0 |
+| **pytesseract** | OCR for scanned PDFs | ≥0.3.10 |
 | **Pillow / pdf2image** | Image processing for OCR | Latest |
-| **Google Gemini** | LLM (gemini-2.5-flash) | via `langchain-google-genai` |
-| **OpenAI Embeddings** | Text embeddings (ada-002) | via OpenRouter |
-| **Pydantic** | Data validation | â‰¥2.7.0 |
-| **python-dotenv** | Environment management | Latest |
+| **Google Gemini** | LLM (`gemini-2.5-flash`) | via `langchain-google-genai` |
+| **OpenAI Embeddings** | Text embeddings (`ada-002`) | via OpenRouter |
+| **Pydantic** | Data validation & settings | ≥2.7.0 |
+| **Pydantic Settings** | Environment configuration | ≥2.2.0 |
 
 ### Frontend
 | Technology | Purpose | Version |
@@ -89,16 +117,47 @@
 
 ---
 
-##  Project Structure
+## 📁 Project Structure
 
 ```
+MedicGraph-OCR-Agentic-RAG/
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py
+│   │   ├── config.py                 # Centralized settings (Pydantic BaseSettings)
+│   │   ├── Services/
+│   │   │   ├── __init__.py
+│   │   │   ├── ocr_service.py        # PDF text extraction (pypdf + tesseract)
+│   │   │   ├── embedding_service.py  # Text chunking + vector store management
+│   │   │   └── rag_service.py        # RAG pipeline orchestrator
+│   │   ├── api/
+│   │   │   ├── __init__.py
+│   │   │   └── routes.py             # FastAPI endpoint handlers
+│   │   ├── schemas/
+│   │   │   ├── __init__.py
+│   │   │   ├── requests.py           # Pydantic request models
+│   │   │   └── responses.py          # Pydantic response models
+│   │   ├── models/                   # Data models (planned)
+│   │   └── Agents/                   # Agentic AI modules (planned)
+│   ├── data/                         # Sample medical report PDFs
+│   ├── test/
+│   │   ├── rag_pipeline_test.py      # End-to-end RAG integration test
+│   │   └── list_gemini_models.py     # Utility: list available Gemini models
+│   ├── main.py                       # FastAPI application entry point
+│   ├── requirements.txt              # Pinned Python dependencies
+│   ├── .env.example                  # Environment variable template
+│   ├── .gitignore
+│   └── pyrightconfig.json            # Type checking configuration
+├── frontend/                         # Next.js 16 application (scaffold)
+├── doc/
+│   └── adr/
+│       └── 0001-choose-docling-for-medical-ocr.md
+└── README.md
 ```
-
-> **Legend:**Implemented | = Scaffolded / Planned
 
 ---
 
-## ðŸš€ Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -138,6 +197,8 @@ cp .env.example .env
 uvicorn main:app --reload --port 8000
 ```
 
+The API will be available at `http://localhost:8000` with interactive docs at `http://localhost:8000/docs`.
+
 ### 2. Frontend Setup
 
 ```bash
@@ -150,31 +211,132 @@ npm install
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:3000` and the backend API at `http://localhost:8000`.
+The frontend will be available at `http://localhost:3000`.
 
 ---
 
-##  Environment Variables
+## 🔐 Environment Variables
 
-Create a `.env` file in the `backend/` directory:
+Create a `.env` file in the `backend/` directory (use `.env.example` as a template):
 
 ```env
-# OpenRouter API key  used for OpenAI-compatible embedding requests
+# Required — API Keys
 OPENROUTER_API_KEY=sk-or-v1-your-openrouter-key-here
-
-# Google Gemini API key  used for LLM inference
 GEMINI_API_KEY=AIzaSy-your-gemini-key-here
+
+# Optional — Model Configuration (defaults shown)
+# EMBEDDING_MODEL=text-embedding-ada-002
+# EMBEDDING_API_BASE=https://openrouter.ai/api/v1
+# LLM_MODEL=gemini-2.5-flash
+
+# Optional — Storage Configuration (defaults shown)
+# CHROMA_PERSIST_DIR=./chroma_db
+# UPLOAD_DIR=./uploads
+
+# Optional — Chunking Configuration (defaults shown)
+# CHUNK_SIZE=1000
+# CHUNK_OVERLAP=200
+# RETRIEVER_K=5
 ```
 
->  **Security:** Never commit `.env` files to version control. Both `.gitignore` files already exclude them.
+> ⚠ **Security:** Never commit `.env` files to version control. Both `.gitignore` files already exclude them.
 
 ---
 
-##  Usage
+## 📡 API Reference
 
-### Running the RAG Pipeline Test
+### `GET /`
+Root endpoint — returns service info and links.
 
-The most complete working flow is in the test script:
+```json
+{
+  "service": "MedicGraph OCR + Agentic RAG",
+  "version": "0.1.0",
+  "docs": "/docs",
+  "health": "/api/health"
+}
+```
+
+### `POST /api/upload`
+Upload a medical report PDF for ingestion into the RAG pipeline.
+
+**Request:** `multipart/form-data` with a `file` field (PDF only)
+
+**Response:**
+```json
+{
+  "document_id": "550e8400-e29b-41d4-a716-446655440000",
+  "num_chunks": 12,
+  "characters_extracted": 8450,
+  "message": "Successfully ingested 'report.pdf' into 12 chunks"
+}
+```
+
+### `POST /api/query`
+Ask a natural-language question about a previously ingested document.
+
+**Request:**
+```json
+{
+  "document_id": "550e8400-e29b-41d4-a716-446655440000",
+  "question": "What is the patient's diagnosis?"
+}
+```
+
+**Response:**
+```json
+{
+  "answer": "Based on the medical report, the patient was diagnosed with...",
+  "source_chunks": [
+    {
+      "content": "...relevant text from the report...",
+      "metadata": {}
+    }
+  ],
+  "document_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+### `GET /api/health`
+Health check with service status.
+
+```json
+{
+  "status": "healthy",
+  "services": {
+    "fastapi": "healthy",
+    "rag_service": "healthy",
+    "loaded_documents": "2"
+  },
+  "version": "0.1.0"
+}
+```
+
+> 📘 **Full interactive documentation** is auto-generated at `http://localhost:8000/docs` (Swagger UI).
+
+---
+
+## 💻 Usage
+
+### Using the API (cURL)
+
+```bash
+# 1. Upload a medical report PDF
+curl -X POST http://localhost:8000/api/upload \
+  -F "file=@path/to/medical_report.pdf"
+
+# 2. Query the ingested document (use the document_id from step 1)
+curl -X POST http://localhost:8000/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"document_id": "YOUR_DOCUMENT_ID", "question": "What is the patient diagnosis?"}'
+
+# 3. Check service health
+curl http://localhost:8000/api/health
+```
+
+### Running the RAG Pipeline Test (Standalone)
+
+For direct pipeline testing without the API server:
 
 ```bash
 cd backend/test
@@ -190,31 +352,15 @@ This will:
 6. Initialize Google Gemini (`gemini-2.5-flash`) as the LLM
 7. Ask 3 test questions and print the RAG-grounded answers
 
-### Listing Available Gemini Models
-
-```bash
-cd backend/test
-python list_gemini_models.py
-```
-
-### FastAPI Endpoints (Current)
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/` | Health check â€” returns `{"Hello": "World"}` |
-| `GET` | `/items/{item_id}` | Sample parameterized endpoint |
-
-> ðŸ“Œ The FastAPI server currently runs with scaffold endpoints. Medical report upload and query endpoints are planned.
-
 ---
 
-## ðŸ”¬ RAG Pipeline Deep Dive
+## 🔬 RAG Pipeline Deep Dive
 
 The core intelligence of this project lives in the Retrieval-Augmented Generation pipeline:
 
 ### Step 1: Document Ingestion & OCR
 ```
-PDF â†’ pypdf (selectable text) â†’ fallback to pytesseract (scanned pages)
+PDF → pypdf (selectable text) → fallback to pytesseract (scanned pages)
 ```
 
 ### Step 2: Text Chunking
@@ -226,70 +372,73 @@ RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
 ### Step 3: Embedding & Storage
 ```
-Text Chunks â†’ OpenAI ada-002 Embeddings â†’ ChromaDB (persistent SQLite)
+Text Chunks → OpenAI ada-002 Embeddings → ChromaDB (persistent SQLite)
 ```
 
 ### Step 4: Retrieval & Generation
 ```
-User Question â†’ Vector Similarity Search â†’ Top-K Relevant Chunks â†’ Gemini LLM â†’ Grounded Answer
+User Question → Vector Similarity Search → Top-K Relevant Chunks → Gemini LLM → Grounded Answer
 ```
 
 ### System Prompt (Medical Expert)
 ```
 You are an AI expert assistant in medical reports. Answer questions only based on
 provided Context. If the answer is not in the context, just state you don't have
-enough information.
+enough information. Be precise and cite specific findings from the report when possible.
 ```
 
-This constraint ensures the LLM never fabricates medical information â€” a critical safety requirement.
+This constraint ensures the LLM never fabricates medical information — a critical safety requirement.
 
 ---
 
-## ðŸ“Š Current Project Status
+## 📊 Current Project Status
 
 | Component | Status | Notes |
 |---|---|---|
-| **OCR Text Extraction** | âœ… Working | `pypdf` for selectable text; pytesseract fallback scaffolded |
-| **Text Chunking** | âœ… Working | LangChain `RecursiveCharacterTextSplitter` |
-| **Vector Embeddings** | âœ… Working | OpenAI `ada-002` via OpenRouter |
-| **ChromaDB Vector Store** | âœ… Working | Persistent local storage with SQLite |
-| **LLM Integration** | âœ… Working | Google Gemini `2.5-flash` via LangChain |
-| **RAG Retrieval Chain** | âœ… Working | Full pipeline tested in `rag_pipeline_test.py` |
-| **FastAPI Server** | ðŸ”¶ Scaffold | Basic server running; endpoints not yet wired to RAG |
-| **API Route Handlers** | ðŸ”² Planned | `app/api/` directory created but empty |
-| **Pydantic Schemas** | ðŸ”² Planned | `app/schemas/` directory created but empty |
-| **Data Models** | ðŸ”² Planned | `app/models/` directory created but empty |
-| **Agentic AI Modules** | ðŸ”² Planned | `app/Agents/` directory created but empty |
-| **Frontend UI** | ðŸ”¶ Scaffold | Default Next.js 16 template; no custom UI yet |
-| **Frontend â†” Backend** | ðŸ”² Planned | No API integration between frontend and backend |
-| **Scanned PDF OCR** | ðŸ”¶ Partial | Code scaffolded but `pdf2image` integration commented out |
-| **Authentication** | ðŸ”² Not Started | â€” |
-| **Docker Support** | ðŸ”² Not Started | â€” |
-| **Unit Tests** | ðŸ”² Not Started | Only integration test exists |
+| **OCR Text Extraction** | ✅ Working | `pypdf` for selectable text; pytesseract fallback scaffolded |
+| **Text Chunking** | ✅ Working | LangChain `RecursiveCharacterTextSplitter` |
+| **Vector Embeddings** | ✅ Working | OpenAI `ada-002` via OpenRouter |
+| **ChromaDB Vector Store** | ✅ Working | Persistent local storage with SQLite |
+| **LLM Integration** | ✅ Working | Google Gemini `2.5-flash` via LangChain |
+| **RAG Retrieval Chain** | ✅ Working | Full pipeline tested in `rag_pipeline_test.py` |
+| **Service Architecture** | ✅ Working | Modular services: OCR, Embedding, RAG |
+| **Pydantic Settings** | ✅ Working | Centralized config via `BaseSettings` |
+| **FastAPI Server** | ✅ Working | CORS-enabled with structured logging |
+| **API Endpoints** | ✅ Working | `POST /upload`, `POST /query`, `GET /health` |
+| **Pydantic Schemas** | ✅ Working | Request/response validation models |
+| **Agentic AI Modules** | 🔲 Planned | `app/Agents/` directory reserved |
+| **Frontend UI** | 🔶 Scaffold | Default Next.js 16 template; no custom UI yet |
+| **Frontend ↔ Backend** | 🔲 Planned | CORS configured; API integration pending |
+| **Scanned PDF OCR** | 🔶 Partial | Code scaffolded; requires Tesseract + Poppler setup |
+| **Authentication** | 🔲 Not Started | — |
+| **Docker Support** | 🔲 Not Started | — |
+| **Unit Tests** | 🔲 Not Started | Only integration test exists |
 
 ---
 
-## ðŸ—º Roadmap
+## 🗺 Roadmap
 
-### Phase 1 â€” Core API Integration *(Current Focus)*
-- [ ] Wire OCR + RAG pipeline into FastAPI endpoints
-- [ ] Create `POST /upload` endpoint for PDF ingestion
-- [ ] Create `POST /query` endpoint for natural-language questions
-- [ ] Define Pydantic schemas for request/response validation
-- [ ] Add proper error handling and HTTP status codes
+### Phase 1 — Core API Integration ✅ *(Completed)*
+- [x] Wire OCR + RAG pipeline into FastAPI endpoints
+- [x] Create `POST /api/upload` endpoint for PDF ingestion
+- [x] Create `POST /api/query` endpoint for natural-language questions
+- [x] Define Pydantic schemas for request/response validation
+- [x] Add proper error handling and HTTP status codes
+- [x] Add CORS middleware for frontend integration
+- [x] Centralize configuration with Pydantic BaseSettings
 
-### Phase 2 â€” Frontend Development
+### Phase 2 — Frontend Development
 - [ ] Build PDF upload interface with drag-and-drop
 - [ ] Build chat/query interface for medical report Q&A
 - [ ] Display source chunks alongside LLM answers
 - [ ] Add loading states and error handling
 
-### Phase 3 â€” Agentic AI Layer
+### Phase 3 — Agentic AI Layer
 - [ ] Implement multi-step medical reasoning agents
 - [ ] Add document comparison capabilities (compare multiple reports)
 - [ ] Build knowledge graph from extracted medical entities
 
-### Phase 4 â€” Production Hardening
+### Phase 4 — Production Hardening
 - [ ] Add authentication and authorization
 - [ ] Dockerize backend and frontend
 - [ ] Add comprehensive unit and integration tests
@@ -299,7 +448,7 @@ This constraint ensures the LLM never fabricates medical information â€” a 
 
 ---
 
-## ðŸ¤ Contributing
+## 🤝 Contributing
 
 Contributions are welcome! Please follow these steps:
 
@@ -313,16 +462,16 @@ Please ensure your code follows the existing project structure and includes appr
 
 ---
 
-## ðŸ“„ License
+## 📄 License
 
-This project is licensed under the MIT License â€” see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ---
 
 <div align="center">
 
-<p><strong>Built with  for smarter healthcare</strong></p>
+<p><strong>Built with ❤ for smarter healthcare</strong></p>
 
-<p><em>MedicGraph  Because every medical report deserves intelligent analysis.</em></p>
+<p><em>MedicGraph — Because every medical report deserves intelligent analysis.</em></p>
 
 </div>
