@@ -38,6 +38,15 @@ build/
 *.sqlite3
 *.db
 
+# ChromaDB vector store data
+chroma_db/
+
+# Uploaded PDF files
+uploads/
+
+# Tox cache
+.tox/
+
 # OS generated files
 .DS_Store
 Thumbs.db

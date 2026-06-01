@@ -1,16 +1,33 @@
-pypdf
-pytesseract
-Pillow
-langchain==0.2.16
-langchain-core==0.2.40
-langchain-community==0.2.17
-langchain-openai==0.1.25
-langchain-google-genai==1.0.10
-langchain-text-splitters==0.2.4
-langsmith==0.1.120
+# ============================================================
+# MedicGraph Backend — Python Dependencies
+# ============================================================
+# Install: pip install -r requirements.txt
+# ============================================================
+
+# --- PDF Processing ---
+pypdf>=4.0.0
+pytesseract>=0.3.10
+Pillow>=10.0.0
+pdf2image>=1.16.0
+
+# --- LangChain RAG Framework ---
+langchain>=0.2.16,<0.3.0
+langchain-core>=0.2.40,<0.3.0
+langchain-community>=0.2.17,<0.3.0
+langchain-openai>=0.1.25,<0.2.0
+langchain-google-genai>=1.0.10,<2.0.0
+langchain-text-splitters>=0.2.4,<0.3.0
+langsmith>=0.1.120
+
+# --- Vector Database ---
+chromadb>=0.4.0
+
+# --- Web Framework ---
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+python-multipart>=0.0.6
+
+# --- Configuration & Validation ---
 pydantic>=2.7.0
-python-dotenv
-fastapi
-uvicorn
-pdf2image
-chromadb
+pydantic-settings>=2.2.0
+python-dotenv>=1.0.0
