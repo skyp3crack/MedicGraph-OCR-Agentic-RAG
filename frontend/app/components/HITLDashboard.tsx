@@ -1,116 +1,370 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
-// Define the shape of our data based on the Pydantic schemas
-interface ICD11CodingEntry {
-    diagnosis_text: string;
-    icd11_code: string;
+export interface ICD11Entry {
+  icd11_code: string;
+  diagnosis_text: string;
+  source?: "ai" | "static" | "user";
+  confidence?: number;
 }
 
-interface SmrpIcd11CodingPayload {
-    main_diagnosis: ICD11CodingEntry[];
-    other_diagnosis: ICD11CodingEntry[];
-    complication_diagnosis: ICD11CodingEntry[];
-    external_causes_of_morbidity: ICD11CodingEntry[];
+export interface Demographics {
+  name: string;
+  icNumber: string;
+  gender: string;
+  age: string;
+  admissionDate: string;
+}
+
+export interface HITLData {
+  demographics: Demographics;
+  mainDiagnosis: ICD11Entry;
+  otherDiagnoses: ICD11Entry[];
+  validationAlerts: string[];
 }
 
 interface HITLDashboardProps {
-    initialData: SmrpIcd11CodingPayload | null;
-    onApprove: (data: SmrpIcd11CodingPayload) => void;
-    onReject: () => void;
+  data: HITLData;
+  onApprove: (data: HITLData) => void;
+  onReject: () => void;
+  onEscalate: () => void;
 }
 
 export default function HITLDashboard({
-    initialData,
-    onApprove,
-    onReject,
+  data,
+  onApprove,
+  onReject,
+  onEscalate,
 }: HITLDashboardProps) {
-    const [editableData, setEditableData] = useState<SmrpIcd11CodingPayload | null>(initialData);
+  const [demographics, setDemographics] = useState<Demographics>({ ...data.demographics });
+  const [mainDiagnosis, setMainDiagnosis] = useState<ICD11Entry>({ ...data.mainDiagnosis });
+  const [otherDiagnoses, setOtherDiagnoses] = useState<ICD11Entry[]>([
+    ...data.otherDiagnoses.map((d) => ({ ...d })),
+  ]);
 
-    if (!editableData) {
-        return <div className="">Waiting for extraction data...</div>;
-    }
+  const handleDemographicsChange = (field: keyof Demographics, value: string) => {
+    setDemographics((prev) => ({ ...prev, [field]: value }));
+  };
 
-    //generic handler for text input changes
-    const handleInputChange = (category: keyof SmrpIcd11CodingPayload, index: number, field: keyof ICD11CodingEntry, value: string) => {
-        const updatedCategory = [...editableData[category]];
-        updatedCategory[index] = { ...updatedCategory[index], [field]: value };
-        setEditableData({ ...editableData, [category]: updatedCategory });
-    };
+  const handleMainDiagnosisChange = (field: keyof ICD11Entry, value: string) => {
+    setMainDiagnosis((prev) => ({ ...prev, [field]: value }));
+  };
 
-    const renderDiagnosisSection = (title: string, category: keyof SmrpIcd11CodingPayload, maxItems: number) => {
-        const items = editableData[category];
+  const handleOtherDiagnosisChange = (index: number, field: keyof ICD11Entry, value: string) => {
+    const updated = [...otherDiagnoses];
+    updated[index] = { ...updated[index], [field]: value, source: "user" };
+    setOtherDiagnoses(updated);
+  };
 
-        return (
-            <div className="mb-6 bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                <h3 className="">
-                    {title}
-                    <span className=""></span>
-                </h3>
-                {items.length === 0 ? (
-                    <div className="">No entries</div>
-                ) : (
-                    <div className="">
-                        {items.map((item, index) => (
-                            <div key={index} className="">
-                                <div className="">
-                                    <label className=""></label>
-                                    <input
-                                        type="text"
-                                        value={item.diagnosis_text}
-                                        onChange={(e) => handleInputChange(category, index, 'diagnosis_text', e.target.value)}
-                                        className=""
-                                    />
-                                    <input
-                                        type="text"
-                                        value={item.icd11_code}
-                                        onChange={(e) => handleInputChange(category, index, 'icd11_code', e.target.value)}
-                                        className=""
-                                    />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-        );
-    };
+  const handleAddSecondaryDiagnosis = () => {
+    setOtherDiagnoses((prev) => [
+      ...prev,
+      { icd11_code: "NEW_CODE", diagnosis_text: "Describe diagnosis...", source: "user" },
+    ]);
+  };
 
-    return (
-        <div className="max-w-4xl mx-auto p-6 bg-gray-50 min-h-screen">
-            <div className="mb-8 border-b border-gray-200 pb-4 flex justify-between items-end">
-                <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Clinical Verification Required</h2>
-                    <p className="text-sm text-gray-600 mt-1">Review the AI-extracted diagnostic codes before final submission to SMRP.</p>
-                </div>
-                <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1 rounded-full text-sm font-medium border border-amber-200">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                    Awaiting Human Review
-                </div>
-            </div>
+  const handleRemoveSecondaryDiagnosis = (index: number) => {
+    setOtherDiagnoses((prev) => prev.filter((_, i) => i !== index));
+  };
 
-            {renderDiagnosisSection("Main Diagnosis (Mandatory)", "main_diagnosis", 1)}
-            {renderDiagnosisSection("Other Diagnoses", "other_diagnosis", 10)}
-            {renderDiagnosisSection("Complication Diagnoses", "complication_diagnosis", 10)}
-            {renderDiagnosisSection("External Causes of Morbidity", "external_causes_of_morbidity", 10)}
+  const handleApproveClick = () => {
+    onApprove({
+      demographics,
+      mainDiagnosis,
+      otherDiagnoses,
+      validationAlerts: data.validationAlerts,
+    });
+  };
 
-            <div className="mt-8 flex justify-end gap-4 pt-4 border-t border-gray-200">
-                <button
-                    onClick={onReject}
-                    className="px-6 py-2.5 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-                >
-                    Reject & Flag Error
-                </button>
-                <button
-                    onClick={() => onApprove(editableData)}
-                    className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm transition-colors flex items-center gap-2"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                    Approve & Submit to SMRP
-                </button>
-            </div>
+  return (
+    <section className="w-[55%] bg-white flex flex-col h-full overflow-hidden">
+      {/* TopAppBar Context */}
+      <div className="flex justify-between items-center w-full px-6 py-4 bg-surface border-b border-outline-variant">
+        <div className="flex flex-col">
+          <span className="font-headline-md text-headline-md font-bold text-primary">
+            Validation Workbench
+          </span>
+          <span className="text-[10px] text-on-surface-variant font-medium">
+            Batch #B-992-KKM-2024
+          </span>
         </div>
-    );
-}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <button className="text-on-surface-variant hover:text-primary transition-transform active:scale-90 cursor-pointer">
+              <span className="material-symbols-outlined">notifications</span>
+            </button>
+            <button className="text-on-surface-variant hover:text-primary transition-transform active:scale-90 cursor-pointer">
+              <span className="material-symbols-outlined">account_circle</span>
+            </button>
+          </div>
+          <button
+            onClick={handleApproveClick}
+            className="bg-primary text-on-primary px-4 py-2 rounded font-title-sm text-title-sm hover:opacity-90 transition-transform active:scale-95 shadow-sm cursor-pointer"
+          >
+            Approve Batch
+          </button>
+        </div>
+      </div>
 
+      {/* Dynamic Content Scrollable Body */}
+      <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide">
+        {/* A. ACTIVE PROGRESS TRACKER (LangGraph) */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-title-sm text-title-sm text-on-surface flex items-center gap-2 font-bold">
+              <span className="material-symbols-outlined text-primary">hub</span>
+              LangGraph Execution State
+            </h3>
+            <span className="text-[10px] font-bold text-primary uppercase bg-primary-fixed px-2 py-0.5 rounded">
+              Real-time Node
+            </span>
+          </div>
+          <div className="relative flex items-center justify-between">
+            <div className="absolute h-0.5 bg-outline-variant w-[90%] left-[5%] -z-10 top-5"></div>
+            {/* Step 1 */}
+            <div className="flex flex-col items-center gap-2 bg-white px-2">
+              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-xs">
+                <span className="material-symbols-outlined text-sm">check</span>
+              </div>
+              <span className="text-[10px] font-bold text-on-surface-variant">Parsing Layout</span>
+            </div>
+            {/* Step 2 */}
+            <div className="flex flex-col items-center gap-2 bg-white px-2">
+              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-xs">
+                <span className="material-symbols-outlined text-sm">check</span>
+              </div>
+              <span className="text-[10px] font-bold text-on-surface-variant">Scrubbing PHI</span>
+            </div>
+            {/* Step 3 */}
+            <div className="flex flex-col items-center gap-2 bg-white px-2">
+              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-xs">
+                <span className="material-symbols-outlined text-sm">check</span>
+              </div>
+              <span className="text-[10px] font-bold text-on-surface-variant">Data Extraction</span>
+            </div>
+            {/* Step 4 (Active) */}
+            <div className="flex flex-col items-center gap-2 bg-white px-2">
+              <div className="w-10 h-10 rounded-full bg-white border-2 border-primary text-primary flex items-center justify-center shadow-xs pulse-active">
+                <span className="material-symbols-outlined text-sm">person_search</span>
+              </div>
+              <span className="text-[10px] font-bold text-primary">Human Verification</span>
+            </div>
+          </div>
+        </section>
+
+        {/* B. PATIENT DEMOGRAPHICS */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <h3 className="font-title-sm text-title-sm text-on-surface font-bold">
+              MyHDD Standard Ingestion Schema
+            </h3>
+            <span className="material-symbols-outlined text-slate-400 text-sm">info</span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 bg-surface-container-low p-4 rounded-xl border border-outline-variant shadow-xs">
+            <div className="space-y-1">
+              <label className="font-label-caps text-label-caps text-on-surface-variant/60 block">
+                Patient Name
+              </label>
+              <input
+                className="w-full bg-white border border-outline-variant rounded p-2 text-sm font-bold focus:ring-primary focus:border-primary focus:outline-none"
+                type="text"
+                value={demographics.name}
+                onChange={(e) => handleDemographicsChange("name", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="font-label-caps text-label-caps text-on-surface-variant/60 block">
+                ID Number (IC)
+              </label>
+              <input
+                className="w-full bg-white border border-outline-variant rounded p-2 text-sm font-mono focus:ring-primary focus:border-primary focus:outline-none"
+                type="text"
+                value={demographics.icNumber}
+                onChange={(e) => handleDemographicsChange("icNumber", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="font-label-caps text-label-caps text-on-surface-variant/60 block">
+                Gender
+              </label>
+              <select
+                className="w-full bg-white border border-outline-variant rounded p-2 text-sm focus:ring-primary focus:border-primary focus:outline-none"
+                value={demographics.gender}
+                onChange={(e) => handleDemographicsChange("gender", e.target.value)}
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="font-label-caps text-label-caps text-on-surface-variant/60 block">
+                Age
+              </label>
+              <input
+                className="w-full bg-white border border-outline-variant rounded p-2 text-sm font-mono focus:ring-primary focus:border-primary focus:outline-none"
+                type="text"
+                value={demographics.age}
+                onChange={(e) => handleDemographicsChange("age", e.target.value)}
+              />
+            </div>
+            <div className="space-y-1 col-span-2">
+              <label className="font-label-caps text-label-caps text-on-surface-variant/60 block">
+                Admission Date
+              </label>
+              <input
+                className="w-full bg-white border border-outline-variant rounded p-2 text-sm font-mono focus:ring-primary focus:border-primary focus:outline-none"
+                type="text"
+                value={demographics.admissionDate}
+                onChange={(e) => handleDemographicsChange("admissionDate", e.target.value)}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* C. CLINICAL CODING (KKM SMRP) */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-title-sm text-title-sm text-on-surface font-bold">
+              KKM SMRP Integration Module (PD301)
+            </h3>
+            <button
+              onClick={handleAddSecondaryDiagnosis}
+              className="text-primary text-[11px] font-bold flex items-center gap-1 hover:underline cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[14px]">add</span>
+              Add Secondary Diagnosis
+            </button>
+          </div>
+
+          {/* MAIN DIAGNOSIS */}
+          <div className="relative border-2 border-primary-fixed p-5 rounded-xl bg-primary/5">
+            <div className="absolute -top-3 right-4 bg-primary text-white text-[10px] font-bold px-3 py-0.5 rounded-full">
+              AI Generated • {mainDiagnosis.confidence ? `${(mainDiagnosis.confidence * 100).toFixed(1)}%` : "98.4%"} Confidence
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="flex flex-col gap-2">
+                <div className="bg-primary text-white font-mono text-[18px] px-4 py-3 rounded-lg shadow-sm font-bold text-center">
+                  {mainDiagnosis.icd11_code}
+                </div>
+                <input
+                  type="text"
+                  value={mainDiagnosis.icd11_code}
+                  onChange={(e) => handleMainDiagnosisChange("icd11_code", e.target.value)}
+                  className="w-20 border border-outline-variant bg-white p-1 rounded text-center text-xs font-mono focus:outline-none"
+                  placeholder="Code"
+                />
+              </div>
+              <div className="flex-1 space-y-3">
+                <label className="font-label-caps text-label-caps text-primary block">
+                  Main Diagnosis Description
+                </label>
+                <textarea
+                  className="w-full border border-outline-variant rounded text-sm bg-white focus:ring-primary p-2 focus:outline-none"
+                  rows={2}
+                  value={mainDiagnosis.diagnosis_text}
+                  onChange={(e) => handleMainDiagnosisChange("diagnosis_text", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* OTHER DIAGNOSES */}
+          <div className="space-y-3">
+            {otherDiagnoses.map((diag, index) => (
+              <div
+                key={index}
+                className={`relative flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                  diag.source === "user"
+                    ? "bg-tertiary-fixed-dim/10 border-tertiary/20"
+                    : "bg-surface-container border-outline-variant"
+                }`}
+              >
+                <div className="flex flex-col gap-1">
+                  <span className="font-mono text-sm font-bold bg-white text-on-surface px-3 py-2 border border-outline-variant rounded text-center min-w-16">
+                    {diag.icd11_code}
+                  </span>
+                  <input
+                    type="text"
+                    value={diag.icd11_code}
+                    onChange={(e) => handleOtherDiagnosisChange(index, "icd11_code", e.target.value)}
+                    className="w-16 border border-outline-variant bg-white p-0.5 rounded text-center text-[10px] font-mono focus:outline-none"
+                    placeholder="Code"
+                  />
+                </div>
+                <input
+                  className="flex-1 text-sm font-medium text-on-surface-variant bg-transparent border-none focus:ring-0 focus:outline-none"
+                  type="text"
+                  value={diag.diagnosis_text}
+                  onChange={(e) => handleOtherDiagnosisChange(index, "diagnosis_text", e.target.value)}
+                />
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-[10px] px-2 py-1 rounded font-bold uppercase ${
+                      diag.source === "user"
+                        ? "bg-tertiary text-white"
+                        : diag.source === "static"
+                        ? "bg-primary-fixed/30 text-on-primary-fixed-variant"
+                        : "bg-primary-container text-on-primary-container"
+                    }`}
+                  >
+                    {diag.source === "user" ? "User Modified" : "AI Predicted"}
+                  </span>
+                  <button
+                    onClick={() => handleRemoveSecondaryDiagnosis(index)}
+                    className="text-red-500 hover:text-red-700 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* D. VALIDATION ALERTS */}
+        {data.validationAlerts && data.validationAlerts.length > 0 && (
+          <section className="bg-error-container/20 border-l-4 border-error p-4 rounded-r-xl flex gap-3 items-start">
+            <span className="material-symbols-outlined text-error" style={{ fontVariationSettings: "'FILL' 1" }}>
+              warning
+            </span>
+            <div>
+              <h4 className="font-bold text-error text-[13px]">SMRP Validation Flag: Rule Mismatch Detected</h4>
+              {data.validationAlerts.map((alertText, index) => (
+                <p key={index} className="text-[12px] text-on-surface-variant mt-1">
+                  {alertText}
+                </p>
+              ))}
+            </div>
+          </section>
+        )}
+        <div className="h-24"></div> {/* Spacer for sticky footer */}
+      </div>
+
+      {/* E. FOOTER (Sticky) */}
+      <div className="mt-auto bg-white border-t border-outline-variant px-6 py-4 flex items-center justify-between shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onReject}
+            className="px-4 py-2 border border-error text-error font-title-sm text-title-sm rounded hover:bg-error/5 transition-colors cursor-pointer"
+          >
+            Reject / Re-run
+          </button>
+          <button
+            onClick={onEscalate}
+            className="px-4 py-2 border border-outline text-on-surface-variant font-title-sm text-title-sm rounded hover:bg-slate-50 transition-colors cursor-pointer"
+          >
+            Escalate Node
+          </button>
+        </div>
+        <button
+          onClick={handleApproveClick}
+          className="bg-primary-container text-on-primary-container px-6 py-3 rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-transform active:scale-95 shadow-md cursor-pointer"
+        >
+          <span className="material-symbols-outlined">send</span>
+          Approve &amp; Submit to SMRP Portal
+        </button>
+      </div>
+    </section>
+  );
+}

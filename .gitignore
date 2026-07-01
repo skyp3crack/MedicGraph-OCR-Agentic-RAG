@@ -1,5 +1,21 @@
-
 SpringO_guide.md
 
 .vscode
+*.log
+.env
+dist/
+build/
+.DS_Store
+
+# AI artifacts
+AGENTS.md
+.opencode/
+opencode.json
+opencode.jsonc
+.specstory/
+.windsurfrules
+DESIGN.md
+code.html
+screen.png
+package-lock.json
 
