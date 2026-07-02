@@ -6,7 +6,7 @@ import PDFViewer from "./components/PDFViewer";
 import HITLDashboard, { HITLData } from "./components/HITLDashboard";
 import { uploadPdf, queryDocument, extractClinicalData, submitAuditAction, getDocumentStatus, SourceChunk } from "./utils/api";
 import { useAuth } from "./contexts/AuthContext";
-import { Dropdown, DropdownPopover, DropdownMenu, DropdownItem, TextField, InputGroup, Button, Label } from "@heroui/react";
+import { Dropdown, DropdownTrigger, DropdownPopover, DropdownMenu, DropdownItem, TextField, InputGroup, Button, Label } from "@heroui/react";
 
 const mockInitialData: HITLData = {
   demographics: {
@@ -466,26 +466,28 @@ export default function Home() {
           {/* User Profile Dropdown */}
           <div className="relative">
             <Dropdown>
-              <button
-                className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-surface-variant/10 transition-colors cursor-pointer group text-left focus:outline-none"
-              >
-                <div className="w-8 h-8 rounded-full bg-primary-fixed/20 flex items-center justify-center flex-shrink-0">
-                  <span className="material-symbols-outlined text-primary-fixed-dim text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    account_circle
+              <DropdownTrigger>
+                <div
+                  className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-surface-variant/10 transition-colors cursor-pointer group text-left"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary-fixed/20 flex items-center justify-center flex-shrink-0">
+                    <span className="material-symbols-outlined text-primary-fixed-dim text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      account_circle
+                    </span>
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <div className="text-[12px] text-inverse-on-surface font-bold truncate">
+                      {user?.name || "User"}
+                    </div>
+                    <div className="text-[10px] text-surface-variant/60 truncate">
+                      {user?.email || ""}
+                    </div>
+                  </div>
+                  <span className="material-symbols-outlined text-surface-variant/50 text-[14px] group-hover:text-surface-variant transition-colors">
+                    expand_more
                   </span>
                 </div>
-                <div className="flex-1 text-left min-w-0">
-                  <div className="text-[12px] text-inverse-on-surface font-bold truncate">
-                    {user?.name || "User"}
-                  </div>
-                  <div className="text-[10px] text-surface-variant/60 truncate">
-                    {user?.email || ""}
-                  </div>
-                </div>
-                <span className="material-symbols-outlined text-surface-variant/50 text-[14px] group-hover:text-surface-variant transition-colors">
-                  expand_more
-                </span>
-              </button>
+              </DropdownTrigger>
               <DropdownPopover className="bg-slate-900 border border-surface-variant/20 text-white rounded-lg shadow-xl min-w-[200px] z-50">
                 <DropdownMenu 
                   aria-label="User actions dropdown" 
