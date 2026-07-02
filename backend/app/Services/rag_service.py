@@ -141,6 +141,57 @@ class RAGService:
             "characters_extracted": len(text),
         }
 
+    def ingest_scrubbed_text(self, document_id: str, scrubbed_text: str, pdf_path: str) -> dict:
+        """
+        Ingest PHI-scrubbed text into the vector store under an existing document ID.
+
+        Args:
+            document_id: Existing document UUID.
+            scrubbed_text: De-identified text content.
+            pdf_path: Original PDF path (for metadata indexing).
+
+        Returns:
+            Dictionary with num_chunks.
+        """
+        persist_dir = os.path.join(self._base_persist_dir, document_id)
+        logger.info(f"Ingesting scrubbed text for document_id={document_id} at {persist_dir}")
+
+        chunks = create_text_chunks(
+            scrubbed_text,
+            chunk_size=self._chunk_size,
+            chunk_overlap=self._chunk_overlap,
+        )
+
+        vector_store = create_vector_store(
+            chunks=chunks,
+            embeddings_model=self._embeddings,
+            persist_directory=persist_dir,
+        )
+
+        self._sessions[document_id] = {
+            "vector_store": vector_store,
+            "persist_dir": persist_dir,
+            "pdf_path": pdf_path,
+            "num_chunks": len(chunks),
+        }
+
+        # Persist metadata to disk
+        try:
+            import json
+            os.makedirs(persist_dir, exist_ok=True)
+            with open(os.path.join(persist_dir, "metadata.json"), "w") as f:
+                json.dump({
+                    "pdf_path": pdf_path,
+                    "num_chunks": len(chunks),
+                }, f)
+        except Exception as e:
+            logger.warning(f"Failed to persist metadata for document {document_id}: {e}")
+
+        logger.info(f"Scrubbed text ingestion complete: {len(chunks)} chunks stored for document {document_id}")
+        return {
+            "num_chunks": len(chunks),
+        }
+
     def query(self, document_id: str, question: str) -> dict:
         """
         Query a previously ingested document using the RAG chain.
