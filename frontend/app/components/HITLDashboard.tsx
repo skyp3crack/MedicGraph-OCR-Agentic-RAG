@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Select, SelectTrigger, SelectValue, SelectPopover, ListBox, ListBoxItem, Label, TextField, InputGroup, Button, Card, CardContent, Chip } from "@heroui/react";
+import React, { useState, useEffect } from "react";
+import { Select, SelectTrigger, SelectValue, SelectPopover, ListBox, ListBoxItem, Label, TextField, InputGroup, Button, Card, CardContent, Chip, Spinner } from "@heroui/react";
 
 export interface ICD11Entry {
   icd11_code: string;
@@ -30,6 +30,7 @@ interface HITLDashboardProps {
   onApprove: (data: HITLData) => void;
   onReject: () => void;
   onEscalate: () => void;
+  isLoading?: boolean;
 }
 
 export default function HITLDashboard({
@@ -37,12 +38,19 @@ export default function HITLDashboard({
   onApprove,
   onReject,
   onEscalate,
+  isLoading = false,
 }: HITLDashboardProps) {
   const [demographics, setDemographics] = useState<Demographics>({ ...data.demographics });
   const [mainDiagnosis, setMainDiagnosis] = useState<ICD11Entry>({ ...data.mainDiagnosis });
   const [otherDiagnoses, setOtherDiagnoses] = useState<ICD11Entry[]>([
     ...data.otherDiagnoses.map((d) => ({ ...d })),
   ]);
+
+  useEffect(() => {
+    setDemographics({ ...data.demographics });
+    setMainDiagnosis({ ...data.mainDiagnosis });
+    setOtherDiagnoses(data.otherDiagnoses.map((d) => ({ ...d })));
+  }, [data]);
 
   const handleDemographicsChange = (field: keyof Demographics, value: string) => {
     setDemographics((prev) => ({ ...prev, [field]: value }));
@@ -77,6 +85,20 @@ export default function HITLDashboard({
       validationAlerts: data.validationAlerts,
     });
   };
+
+  if (isLoading) {
+    return (
+      <section className="w-full md:w-[55%] bg-white flex flex-col h-full items-center justify-center p-6 border-l border-outline-variant">
+        <div className="flex flex-col items-center gap-4 text-center max-w-sm">
+          <Spinner size="lg" />
+          <h2 className="text-lg font-bold text-primary font-headline-md mt-2">Extracting Clinical Data</h2>
+          <p className="text-xs text-on-surface-variant leading-relaxed">
+            Running LLM-powered structured extraction to map patient demographics, clinical assessments, and ICD-11 coding schemas according to Malaysian KKM SMRP protocols.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="w-full md:w-[55%] bg-white flex flex-col h-full overflow-hidden">

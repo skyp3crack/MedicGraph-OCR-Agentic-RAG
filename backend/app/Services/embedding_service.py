@@ -7,7 +7,7 @@ API (routed through OpenRouter), and persisting vectors in ChromaDB.
 
 import logging
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 
@@ -56,30 +56,27 @@ def create_text_chunks(
 
 def get_embeddings_model(
     model: str,
-    api_base: str,
     api_key: str
-) -> OpenAIEmbeddings:
+) -> GoogleGenerativeAIEmbeddings:
     """
-    Initialize the OpenAI-compatible embeddings model.
+    Initialize the Google Gemini embeddings model (free tier).
 
     Args:
-        model: Embedding model name (e.g., "text-embedding-ada-002").
-        api_base: Base URL for the embedding API (e.g., OpenRouter).
-        api_key: API key for authentication.
+        model: Embedding model name (e.g., "models/text-embedding-004").
+        api_key: Google Gemini API key.
 
     Returns:
-        Configured OpenAIEmbeddings instance.
+        Configured GoogleGenerativeAIEmbeddings instance.
     """
-    return OpenAIEmbeddings(
+    return GoogleGenerativeAIEmbeddings(
         model=model,
-        openai_api_base=api_base,
-        openai_api_key=api_key,
+        google_api_key=api_key,
     )
 
 
 def create_vector_store(
     chunks: list[Document],
-    embeddings_model: OpenAIEmbeddings,
+    embeddings_model: GoogleGenerativeAIEmbeddings,
     persist_directory: str
 ) -> Chroma:
     """
@@ -106,7 +103,7 @@ def create_vector_store(
 
 
 def load_vector_store(
-    embeddings_model: OpenAIEmbeddings,
+    embeddings_model: GoogleGenerativeAIEmbeddings,
     persist_directory: str
 ) -> Chroma:
     """

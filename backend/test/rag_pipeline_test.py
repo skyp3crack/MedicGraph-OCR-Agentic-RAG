@@ -3,9 +3,8 @@
 # --- Imports ---
 from pypdf import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings, GoogleGenerativeAI # Corrected imports
 from langchain_community.vectorstores import Chroma
-from langchain_google_genai import GoogleGenerativeAI # Corrected import
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
@@ -69,10 +68,9 @@ print(chunks[0].page_content)
 
 
 # --- 3. Embeddings Model Configuration ---
-embeddings_model = OpenAIEmbeddings(
-    model="text-embedding-ada-002", # Standard OpenAI embedding model
-    openai_api_base="https://openrouter.ai/api/v1", 
-    openai_api_key=os.environ["OPENROUTER_API_KEY"] 
+embeddings_model = GoogleGenerativeAIEmbeddings(
+    model="models/gemini-embedding-001",
+    google_api_key=os.environ["GEMINI_API_KEY"]
 )
 
 
@@ -84,7 +82,6 @@ vector_store = Chroma.from_documents(
     embedding=embeddings_model, # Parameter name is 'embedding'
     persist_directory="./chroma_db"
 )
-vector_store.persist()
 print("Vector store created/persisted.")
 
 

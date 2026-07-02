@@ -22,6 +22,34 @@ export interface QueryResponse {
   document_id: string;
 }
 
+export interface PatientDemographics {
+  name: string;
+  ic_number: string;
+  gender: string;
+  age: string;
+  admission_date: string;
+}
+
+export interface DiagnosisEntry {
+  icd11_code: string;
+  diagnosis_text: string;
+  source: string;
+  confidence: number;
+}
+
+export interface ClinicalExtractionResponse {
+  document_id: string;
+  demographics: PatientDemographics;
+  main_diagnosis: DiagnosisEntry;
+  other_diagnoses: DiagnosisEntry[];
+  validation_alerts: string[];
+}
+
+export interface AuditActionResponse {
+  status: string;
+  message: string;
+}
+
 export interface HealthResponse {
   status: string;
   services: Record<string, string>;
@@ -85,5 +113,62 @@ export async function fetchHealth(): Promise<HealthResponse> {
   if (!response.ok) {
     throw new Error("Backend service health check failed.");
   }
+  return response.json();
+}
+
+/**
+ * Extract structured clinical data from an ingested PDF report
+ * @param documentId The UUID of the document
+ */
+export async function extractClinicalData(
+  documentId: string
+): Promise<ClinicalExtractionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/extract`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      document_id: documentId,
+      question: "extract", // backend endpoint expects QueryRequest which requires a 'question' parameter
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Failed to extract structured clinical data.");
+  }
+
+  return response.json();
+}
+
+/**
+ * Submit HITL auditor action to backend
+ * @param documentId The UUID of the document
+ * @param action The action taken ('approve' | 'reject' | 'escalate')
+ * @param payload Optional payload (e.g. corrected demographics/diagnoses)
+ */
+export async function submitAuditAction(
+  documentId: string,
+  action: "approve" | "reject" | "escalate",
+  payload?: any
+): Promise<AuditActionResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/audit/action`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      document_id: documentId,
+      action: action,
+      payload: payload,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to submit audit action: ${action}`);
+  }
+
   return response.json();
 }

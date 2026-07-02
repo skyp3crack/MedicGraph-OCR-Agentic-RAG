@@ -40,3 +40,26 @@ class SmrpIcd11CodingPayload(BaseModel):
 class KkmSmrpIntegrationContainer(BaseModel):
     """Output schema for Node 4: The Coding & RAG Agent"""
     smrp_icd11_coding: SmrpIcd11CodingPayload = Field(..., description="PD301 module integration payload.")
+
+
+# --- Client-Facing Extraction Schemas for Phase 1 ---
+
+class PatientDemographics(BaseModel):
+    name: str = Field(..., description="Full patient name")
+    ic_number: str = Field(..., description="Malaysian National Identity Card Number (e.g., YYMMDD-PB-###G)")
+    gender: str = Field(..., description="Patient gender (Male/Female/Other)")
+    age: str = Field(..., description="Patient age")
+    admission_date: str = Field(..., description="Date of admission or report date/time")
+
+class DiagnosisEntry(BaseModel):
+    icd11_code: str = Field(..., description="ICD-11 alphanumeric code")
+    diagnosis_text: str = Field(..., description="Clinical narrative or diagnosis text")
+    source: str = Field(default="ai", description="Source of diagnosis (ai, static, user)")
+    confidence: float = Field(default=1.0, description="LLM confidence score (0.0 to 1.0)")
+
+class ClinicalExtractionResponse(BaseModel):
+    document_id: str = Field(..., description="UUID of the extracted document")
+    demographics: PatientDemographics = Field(..., description="Extracted patient demographics")
+    main_diagnosis: DiagnosisEntry = Field(..., description="KKM SMRP main primary diagnosis code mapping")
+    other_diagnoses: List[DiagnosisEntry] = Field(default_factory=list, description="KKM SMRP secondary/complication diagnoses")
+    validation_alerts: List[str] = Field(default_factory=list, description="Alerts for inconsistencies or manual audit reasons")

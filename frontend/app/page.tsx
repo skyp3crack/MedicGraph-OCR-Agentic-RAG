@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PDFViewer from "./components/PDFViewer";
 import HITLDashboard, { HITLData } from "./components/HITLDashboard";
-import { uploadPdf, queryDocument } from "./utils/api";
+import { uploadPdf, queryDocument, extractClinicalData, submitAuditAction, SourceChunk } from "./utils/api";
 import { useAuth } from "./contexts/AuthContext";
 import { Dropdown, DropdownPopover, DropdownMenu, DropdownItem, TextField, InputGroup, Button, Label } from "@heroui/react";
 
@@ -42,6 +42,7 @@ const mockInitialData: HITLData = {
 interface ChatMessage {
   sender: "user" | "arif";
   text: string;
+  sourceChunks?: SourceChunk[];
 }
 
 export default function Home() {
@@ -62,6 +63,10 @@ export default function Home() {
   ]);
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
+
+  // Dynamic Clinical Extraction State
+  const [clinicalData, setClinicalData] = useState<HITLData | null>(null);
+  const [isExtracting, setIsExtracting] = useState(false);
 
   // Auth guard: redirect to sign-in if not authenticated
   useEffect(() => {
@@ -93,6 +98,7 @@ export default function Home() {
     // Reset states
     setDocumentId(null);
     setExtractedText("");
+    setClinicalData(null);
     setChatMessages([
       { sender: "arif", text: `Uploading and ingesting ${file.name}...` },
     ]);
@@ -112,9 +118,55 @@ export default function Home() {
         ...prev,
         {
           sender: "arif",
-          text: `Successfully ingested document! ID: ${response.document_id}. Ask me any clinical questions regarding this report.`,
+          text: `Successfully ingested document! ID: ${response.document_id}. Now running clinical extraction...`,
         },
       ]);
+
+      // Trigger dynamic clinical data extraction
+      setIsExtracting(true);
+      try {
+        const extraction = await extractClinicalData(response.document_id);
+        const formatted: HITLData = {
+          demographics: {
+            name: extraction.demographics.name,
+            icNumber: extraction.demographics.ic_number,
+            gender: extraction.demographics.gender,
+            age: extraction.demographics.age,
+            admissionDate: extraction.demographics.admission_date,
+          },
+          mainDiagnosis: {
+            icd11_code: extraction.main_diagnosis.icd11_code,
+            diagnosis_text: extraction.main_diagnosis.diagnosis_text,
+            source: extraction.main_diagnosis.source as "ai" | "static" | "user",
+            confidence: extraction.main_diagnosis.confidence,
+          },
+          otherDiagnoses: extraction.other_diagnoses.map((d: any) => ({
+            icd11_code: d.icd11_code,
+            diagnosis_text: d.diagnosis_text,
+            source: d.source as "ai" | "static" | "user",
+          })),
+          validationAlerts: extraction.validation_alerts,
+        };
+        setClinicalData(formatted);
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            sender: "arif",
+            text: "Clinical extraction completed! Patient records and ICD-11 mapping have been updated in the right workbench panel.",
+          },
+        ]);
+      } catch (extractErr: any) {
+        console.error(extractErr);
+        setChatMessages((prev) => [
+          ...prev,
+          {
+            sender: "arif",
+            text: `Clinical extraction failed: ${extractErr.message || "Failed to extract structured data"}.`,
+          },
+        ]);
+      } finally {
+        setIsExtracting(false);
+      }
     } catch (err: any) {
       console.error(err);
       setChatMessages((prev) => [
@@ -154,7 +206,7 @@ export default function Home() {
       const response = await queryDocument(documentId, question);
       setChatMessages((prev) => [
         ...prev,
-        { sender: "arif", text: response.answer },
+        { sender: "arif", text: response.answer, sourceChunks: response.source_chunks },
       ]);
     } catch (err: any) {
       console.error(err);
@@ -170,19 +222,37 @@ export default function Home() {
     }
   };
 
-  const handleApprove = (finalData: HITLData) => {
-    console.log("Submitting verified clinical data to database:", finalData);
-    alert(`Data Approved & Saved!\n\nPatient: ${finalData.demographics.name}\nMain Code: ${finalData.mainDiagnosis.icd11_code}`);
+  const handleApprove = async (finalData: HITLData) => {
+    if (!documentId) return;
+    try {
+      await submitAuditAction(documentId, "approve", finalData);
+      alert(`Data Approved & Saved!\n\nPatient: ${finalData.demographics.name}\nMain Code: ${finalData.mainDiagnosis.icd11_code}`);
+    } catch (err: any) {
+      console.error(err);
+      alert(`Approval failed: ${err.message || "Failed to submit verification."}`);
+    }
   };
 
-  const handleReject = () => {
-    console.log("Clinician rejected the record.");
-    alert("Record rejected and flagged for audit.");
+  const handleReject = async () => {
+    if (!documentId) return;
+    try {
+      await submitAuditAction(documentId, "reject");
+      alert("Record rejected and flagged for audit.");
+    } catch (err: any) {
+      console.error(err);
+      alert(`Rejection failed: ${err.message || "Failed to submit audit action."}`);
+    }
   };
 
-  const handleEscalate = () => {
-    console.log("Escalated to senior audit node.");
-    alert("Record escalated to Senior Medical Board panel.");
+  const handleEscalate = async () => {
+    if (!documentId) return;
+    try {
+      await submitAuditAction(documentId, "escalate");
+      alert("Record escalated to Senior Medical Board panel.");
+    } catch (err: any) {
+      console.error(err);
+      alert(`Escalation failed: ${err.message || "Failed to submit escalation request."}`);
+    }
   };
 
   return (
@@ -305,7 +375,22 @@ export default function Home() {
                       : "bg-primary text-on-primary ml-4 self-end text-right"
                   }`}
                 >
-                  {msg.text}
+                  <div>{msg.text}</div>
+                  {msg.sourceChunks && msg.sourceChunks.length > 0 && (
+                    <div className="mt-1.5 pt-1.5 border-t border-white/10 text-[9px] text-white/50 space-y-1 text-left">
+                      <div className="font-bold uppercase tracking-wider text-[8px] text-primary-fixed-dim">Source Citations:</div>
+                      {msg.sourceChunks.map((chunk, cIdx) => (
+                        <div key={cIdx} className="bg-white/5 p-1 rounded hover:bg-white/10 transition-colors">
+                          <span className="font-bold text-white/70">
+                            [Page {chunk.metadata?.page || chunk.metadata?.page_number || 1}]:
+                          </span>{" "}
+                          <span className="italic">
+                            {chunk.content.length > 60 ? `${chunk.content.substring(0, 60)}...` : chunk.content}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -423,10 +508,11 @@ export default function Home() {
 
         {/* RIGHT PANEL: STRUCTURED HITL WORKBENCH (55% width on desktop, 100% on mobile) */}
         <HITLDashboard
-          data={mockInitialData}
+          data={clinicalData || mockInitialData}
           onApprove={handleApprove}
           onReject={handleReject}
           onEscalate={handleEscalate}
+          isLoading={isExtracting}
         />
       </main>
     </div>

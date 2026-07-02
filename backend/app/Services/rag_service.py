@@ -48,11 +48,10 @@ class RAGService:
     def __init__(self):
         settings = get_settings()
 
-        # Initialize the embeddings model
+        # Initialize the embeddings model (Google free tier)
         self._embeddings = get_embeddings_model(
             model=settings.embedding_model,
-            api_base=settings.embedding_api_base,
-            api_key=settings.openrouter_api_key,
+            api_key=settings.gemini_api_key,
         )
 
         # Initialize the LLM
@@ -122,6 +121,18 @@ class RAGService:
             "num_chunks": len(chunks),
         }
 
+        # Persist metadata to disk
+        try:
+            import json
+            os.makedirs(persist_dir, exist_ok=True)
+            with open(os.path.join(persist_dir, "metadata.json"), "w") as f:
+                json.dump({
+                    "pdf_path": pdf_path,
+                    "num_chunks": len(chunks),
+                }, f)
+        except Exception as e:
+            logger.warning(f"Failed to persist metadata for document {document_id}: {e}")
+
         logger.info(f"Ingestion complete: {len(chunks)} chunks stored for document {document_id}")
 
         return {
@@ -150,7 +161,22 @@ class RAGService:
             persist_dir = os.path.join(self._base_persist_dir, document_id)
             if os.path.exists(persist_dir):
                 vector_store = load_vector_store(self._embeddings, persist_dir)
-                session = {"vector_store": vector_store, "persist_dir": persist_dir}
+                pdf_path = None
+                try:
+                    import json
+                    meta_path = os.path.join(persist_dir, "metadata.json")
+                    if os.path.exists(meta_path):
+                        with open(meta_path, "r") as f:
+                            meta_data = json.load(f)
+                            pdf_path = meta_data.get("pdf_path")
+                except Exception as e:
+                    logger.warning(f"Failed to load metadata for document {document_id}: {e}")
+
+                session = {
+                    "vector_store": vector_store,
+                    "persist_dir": persist_dir,
+                    "pdf_path": pdf_path
+                }
                 self._sessions[document_id] = session
             else:
                 raise ValueError(f"Document not found: {document_id}")
@@ -186,3 +212,41 @@ class RAGService:
     def list_documents(self) -> list[str]:
         """Return list of currently loaded document IDs."""
         return list(self._sessions.keys())
+
+    def get_pdf_path(self, document_id: str) -> str:
+        """
+        Get the original PDF path for a document ID.
+
+        Args:
+            document_id: The document UUID.
+
+        Returns:
+            The file path to the PDF on disk.
+        """
+        session = self._sessions.get(document_id)
+        if not session or not session.get("pdf_path"):
+            # Load metadata from disk
+            persist_dir = os.path.join(self._base_persist_dir, document_id)
+            meta_path = os.path.join(persist_dir, "metadata.json")
+            if os.path.exists(meta_path):
+                import json
+                try:
+                    with open(meta_path, "r") as f:
+                        meta_data = json.load(f)
+                        pdf_path = meta_data.get("pdf_path")
+                        if pdf_path:
+                            # Re-populate session in memory
+                            if document_id in self._sessions:
+                                self._sessions[document_id]["pdf_path"] = pdf_path
+                            else:
+                                self._sessions[document_id] = {
+                                    "pdf_path": pdf_path,
+                                    "persist_dir": persist_dir
+                                }
+                            return pdf_path
+                except Exception as e:
+                    logger.warning(f"Failed to read metadata file: {e}")
+            raise ValueError(f"PDF path not found or not indexed for document: {document_id}")
+
+        return session["pdf_path"]
+

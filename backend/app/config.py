@@ -15,8 +15,8 @@ class Settings(BaseSettings):
 
     # --- API Keys ---
     openrouter_api_key: str = Field(
-        ...,
-        description="OpenRouter API key for OpenAI-compatible embedding requests"
+        default="",
+        description="OpenRouter API key (optional, not used for embeddings)"
     )
     gemini_api_key: str = Field(
         ...,
@@ -25,12 +25,8 @@ class Settings(BaseSettings):
 
     # --- Model Configuration ---
     embedding_model: str = Field(
-        default="text-embedding-ada-002",
-        description="OpenAI embedding model name"
-    )
-    embedding_api_base: str = Field(
-        default="https://openrouter.ai/api/v1",
-        description="Base URL for the embedding API (OpenRouter)"
+        default="models/gemini-embedding-001",
+        description="Google Gemini embedding model (free tier)"
     )
     llm_model: str = Field(
         default="gemini-2.5-flash",

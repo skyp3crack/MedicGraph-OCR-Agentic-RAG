@@ -11,10 +11,13 @@ import os
 import shutil
 import logging
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from pydantic import BaseModel
 
 from app.schemas.requests import QueryRequest
 from app.schemas.responses import UploadResponse, QueryResponse, HealthResponse
+from app.schemas.kkm_schemas import ClinicalExtractionResponse
 from app.Services.rag_service import RAGService
+from app.Services.extraction_service import ExtractionService
 from app.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -23,6 +26,7 @@ router = APIRouter(prefix="/api", tags=["MedicGraph RAG"])
 
 # Singleton RAG service instance — initialized on first use
 _rag_service: RAGService | None = None
+_extraction_service: ExtractionService | None = None
 
 
 def get_rag_service() -> RAGService:
@@ -31,6 +35,14 @@ def get_rag_service() -> RAGService:
     if _rag_service is None:
         _rag_service = RAGService()
     return _rag_service
+
+
+def get_extraction_service() -> ExtractionService:
+    """Lazy-initialize the Extraction service singleton."""
+    global _extraction_service
+    if _extraction_service is None:
+        _extraction_service = ExtractionService()
+    return _extraction_service
 
 
 @router.post("/upload", response_model=UploadResponse)
@@ -115,6 +127,52 @@ async def query_document(request: QueryRequest):
         source_chunks=result["source_chunks"],
         document_id=request.document_id,
     )
+
+
+@router.post("/extract", response_model=ClinicalExtractionResponse)
+async def extract_clinical_data(request: QueryRequest):
+    """
+    Extract structured patient demographics, ICD-11 codes and validation alerts
+    from an ingested PDF report document.
+    """
+    try:
+        rag_service = get_rag_service()
+        pdf_path = rag_service.get_pdf_path(request.document_id)
+        
+        # Load raw text from PDF
+        from app.Services.ocr_service import extract_text_from_pdf
+        text = extract_text_from_pdf(pdf_path)
+        
+        # Extract clinical details
+        extraction_service = get_extraction_service()
+        result = extraction_service.extract(text)
+        
+        # Fill in the document_id in the response
+        result["document_id"] = request.document_id
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Clinical data extraction failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Extraction failed: {e}")
+
+
+class AuditActionRequest(BaseModel):
+    document_id: str
+    action: str  # approve, reject, escalate
+    payload: dict | None = None
+
+
+@router.post("/audit/action")
+async def audit_action(request: AuditActionRequest):
+    """
+    Log or execute audit actions (Approve, Reject, Escalate) from clinician HITL review.
+    """
+    logger.info(f"Audit action received: {request.action} on document {request.document_id}")
+    return {
+        "status": "success",
+        "message": f"Action '{request.action}' recorded successfully for document {request.document_id}"
+    }
 
 
 @router.get("/health", response_model=HealthResponse)
