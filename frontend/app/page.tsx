@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import PDFViewer from "./components/PDFViewer";
-import HITLDashboard, { HITLData, ICD11Entry } from "./components/HITLDashboard";
+import HITLDashboard, { HITLData } from "./components/HITLDashboard";
 import { uploadPdf, queryDocument } from "./utils/api";
+import { useAuth } from "./contexts/AuthContext";
+import { Dropdown, DropdownPopover, DropdownMenu, DropdownItem, TextField, InputGroup, Button, Label } from "@heroui/react";
 
 const mockInitialData: HITLData = {
   demographics: {
@@ -42,6 +45,12 @@ interface ChatMessage {
 }
 
 export default function Home() {
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const router = useRouter();
+  
+  // Mobile sidebar toggle state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(null);
   const [isIngesting, setIsIngesting] = useState(false);
@@ -53,6 +62,28 @@ export default function Home() {
   ]);
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [isQuerying, setIsQuerying] = useState(false);
+
+  // Auth guard: redirect to sign-in if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push("/signin");
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  // Show loading spinner while checking auth
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-full border-4 border-outline-variant border-t-primary animate-spin" />
+          <p className="text-sm text-on-surface-variant font-medium">Loading clinical workspace...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render dashboard if not authenticated
+  if (!isAuthenticated) return null;
 
   // Ingestion Handler
   const handleFileSelect = async (file: File) => {
@@ -70,7 +101,6 @@ export default function Home() {
       const response = await uploadPdf(file);
       setDocumentId(response.document_id);
       
-      // Simulate/approximate layout text from standard read or just display message
       setExtractedText(
         `--- Extracted Document: ${file.name} ---\n` +
         `UUID: ${response.document_id}\n` +
@@ -140,7 +170,6 @@ export default function Home() {
     }
   };
 
-  // Dashboard buttons action
   const handleApprove = (finalData: HITLData) => {
     console.log("Submitting verified clinical data to database:", finalData);
     alert(`Data Approved & Saved!\n\nPatient: ${finalData.demographics.name}\nMain Code: ${finalData.mainDiagnosis.icd11_code}`);
@@ -157,21 +186,57 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen w-full overflow-hidden flex flex-row font-sans">
+    <div className="h-screen w-full overflow-hidden flex flex-col md:flex-row font-sans">
+      {/* MOBILE HEADER BAR - Visible on mobile only */}
+      <header className="md:hidden w-full h-14 bg-slate-900 text-white flex items-center justify-between px-4 z-40 shadow-sm flex-shrink-0">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setIsSidebarOpen(true)} 
+            className="p-1.5 hover:bg-white/10 rounded-lg flex items-center justify-center focus:outline-none"
+          >
+            <span className="material-symbols-outlined text-[24px]">menu</span>
+          </button>
+          <span className="font-bold text-sm tracking-tight">MedicoAgenticAI</span>
+        </div>
+        <div className="w-8 h-8 rounded-full bg-primary-fixed/20 flex items-center justify-center">
+          <span className="material-symbols-outlined text-primary-fixed-dim text-[18px]">account_circle</span>
+        </div>
+      </header>
+
+      {/* MOBILE BACKDROP */}
+      {isSidebarOpen && (
+        <div 
+          onClick={() => setIsSidebarOpen(false)} 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden animate-[fadeIn_0.2s_ease-out]" 
+        />
+      )}
+
       {/* PRIMARY LEFT SIDEBAR */}
-      <aside className="w-[260px] flex-shrink-0 bg-inverse-surface flex flex-col z-50 shadow-sm border-r border-outline-variant/10 text-on-primary">
-        <div className="px-6 py-6 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center">
-            <span className="material-symbols-outlined text-primary font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>
-              clinical_notes
-            </span>
+      <aside 
+        className={`fixed md:relative inset-y-0 left-0 z-50 w-[260px] flex-shrink-0 bg-inverse-surface flex flex-col shadow-lg md:shadow-sm border-r border-outline-variant/10 text-on-primary transform transition-transform duration-300 md:translate-x-0 ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="px-6 py-6 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>
+                clinical_notes
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <h1 className="font-bold text-primary-fixed text-headline-md leading-none">MedicoAgenticAI</h1>
+              <span className="text-[9px] text-surface-variant/70 uppercase tracking-widest font-bold mt-1">
+                MedicGraph
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <h1 className="font-bold text-primary-fixed text-headline-md leading-none">MedicoAgenticAI</h1>
-            <span className="text-[9px] text-surface-variant/70 uppercase tracking-widest font-bold mt-1">
-              MedicGraph Intelligence
-            </span>
-          </div>
+          <button 
+            onClick={() => setIsSidebarOpen(false)} 
+            className="md:hidden p-1 text-surface-variant hover:text-white rounded-lg flex items-center justify-center"
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-4 space-y-1 scrollbar-hide py-2">
@@ -236,7 +301,7 @@ export default function Home() {
                   key={index}
                   className={`p-2 rounded-lg leading-relaxed ${
                     msg.sender === "arif"
-                      ? "bg-surface-container-low text-on-surface-variant border-l-2 border-primary"
+                      ? "bg-slate-800 text-surface-variant border-l-2 border-primary"
                       : "bg-primary text-on-primary ml-4 self-end text-right"
                   }`}
                 >
@@ -245,32 +310,101 @@ export default function Home() {
               ))}
             </div>
 
-            {/* Input Form */}
-            <form onSubmit={handleSendQuestion} className="flex gap-1 mt-auto">
-              <input
-                type="text"
-                value={currentQuestion}
-                onChange={(e) => setCurrentQuestion(e.target.value)}
-                placeholder="Ask ARIF..."
-                className="flex-1 bg-white/10 text-white rounded border border-white/20 p-1.5 text-[11px] placeholder-white/50 focus:outline-none focus:border-primary-fixed"
-                disabled={isIngesting || isQuerying}
-              />
-              <button
+            <form onSubmit={handleSendQuestion} className="flex gap-1 mt-auto items-end w-full">
+              <TextField 
+                name="chatQuestion" 
+                value={currentQuestion} 
+                onChange={setCurrentQuestion}
+                isDisabled={isIngesting || isQuerying}
+                className="flex-1"
+              >
+                <InputGroup className="bg-white/10 border-white/20 hover:border-white/40 focus-within:!border-primary-fixed border rounded h-8 min-h-8 px-2 flex items-center">
+                  <InputGroup.Input 
+                    placeholder="Ask ARIF..."
+                    className="w-full h-full text-white text-[11px] placeholder:text-white/40 bg-transparent focus:outline-none"
+                  />
+                </InputGroup>
+              </TextField>
+              <Button
+                isIconOnly
+                size="sm"
                 type="submit"
-                className="bg-primary-fixed text-on-primary-fixed rounded p-1 hover:opacity-90 active:scale-95 transition-all flex items-center justify-center cursor-pointer"
-                disabled={isIngesting || isQuerying || !currentQuestion.trim()}
+                variant="primary"
+                className="bg-primary-fixed text-on-primary-fixed h-8 min-h-8 w-8 min-w-8 rounded flex items-center justify-center"
+                isDisabled={isIngesting || isQuerying || !currentQuestion.trim()}
               >
                 <span className="material-symbols-outlined text-[14px]">send</span>
-              </button>
+              </Button>
             </form>
           </div>
         </div>
 
-        <footer className="p-4 flex flex-col gap-1.5 border-t border-surface-variant/5 bg-slate-900/50">
-          <a className="text-surface-variant flex items-center gap-2 px-2 py-1.5 hover:underline text-[12px]" href="#">
-            <span className="material-symbols-outlined text-[16px]">help</span>
-            <span>Documentation</span>
-          </a>
+        <footer className="p-4 flex flex-col gap-2 border-t border-surface-variant/10 bg-slate-900/50">
+          {/* User Profile Dropdown */}
+          <div className="relative">
+            <Dropdown>
+              <button
+                className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-surface-variant/10 transition-colors cursor-pointer group text-left focus:outline-none"
+              >
+                <div className="w-8 h-8 rounded-full bg-primary-fixed/20 flex items-center justify-center flex-shrink-0">
+                  <span className="material-symbols-outlined text-primary-fixed-dim text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    account_circle
+                  </span>
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <div className="text-[12px] text-inverse-on-surface font-bold truncate">
+                    {user?.name || "User"}
+                  </div>
+                  <div className="text-[10px] text-surface-variant/60 truncate">
+                    {user?.email || ""}
+                  </div>
+                </div>
+                <span className="material-symbols-outlined text-surface-variant/50 text-[14px] group-hover:text-surface-variant transition-colors">
+                  expand_more
+                </span>
+              </button>
+              <DropdownPopover className="bg-slate-900 border border-surface-variant/20 text-white rounded-lg shadow-xl min-w-[200px] z-50">
+                <DropdownMenu 
+                  aria-label="User actions dropdown" 
+                  onAction={(key) => {
+                    if (key === "logout") logout();
+                  }}
+                >
+                  <DropdownItem 
+                    id="settings" 
+                    textValue="Account Settings"
+                    className="hover:bg-white/10 rounded cursor-pointer p-2"
+                  >
+                    <div className="flex items-center gap-2 text-white">
+                      <span className="material-symbols-outlined text-[16px]">settings</span>
+                      <Label className="text-xs cursor-pointer">Account Settings</Label>
+                    </div>
+                  </DropdownItem>
+                  <DropdownItem 
+                    id="docs" 
+                    textValue="Documentation"
+                    className="hover:bg-white/10 rounded cursor-pointer p-2"
+                  >
+                    <div className="flex items-center gap-2 text-white">
+                      <span className="material-symbols-outlined text-[16px]">help</span>
+                      <Label className="text-xs cursor-pointer">Documentation</Label>
+                    </div>
+                  </DropdownItem>
+                  <DropdownItem 
+                    id="logout" 
+                    textValue="Sign Out"
+                    className="hover:bg-danger/10 rounded cursor-pointer p-2"
+                  >
+                    <div className="flex items-center gap-2 text-danger">
+                      <span className="material-symbols-outlined text-[16px] text-danger">logout</span>
+                      <Label className="text-xs text-danger cursor-pointer">Sign Out</Label>
+                    </div>
+                  </DropdownItem>
+                </DropdownMenu>
+              </DropdownPopover>
+            </Dropdown>
+          </div>
+
           <div className="text-on-surface-variant/40 text-[9px] px-2 font-bold tracking-widest uppercase">
             v4.2 Clinical Protocol
           </div>
@@ -278,8 +412,8 @@ export default function Home() {
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-row overflow-hidden h-screen bg-background">
-        {/* LEFT PANEL: PDF VIEWER & EXTRACTED TEXT (45%) */}
+      <main className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden h-full bg-background">
+        {/* LEFT PANEL: PDF VIEWER & EXTRACTED TEXT (45% width on desktop, 100% on mobile) */}
         <PDFViewer
           file={selectedFile}
           onFileSelect={handleFileSelect}
@@ -287,7 +421,7 @@ export default function Home() {
           extractedText={extractedText}
         />
 
-        {/* RIGHT PANEL: STRUCTURED HITL WORKBENCH (55%) */}
+        {/* RIGHT PANEL: STRUCTURED HITL WORKBENCH (55% width on desktop, 100% on mobile) */}
         <HITLDashboard
           data={mockInitialData}
           onApprove={handleApprove}

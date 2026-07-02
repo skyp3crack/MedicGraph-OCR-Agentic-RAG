@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { Select, SelectTrigger, SelectValue, SelectPopover, ListBox, ListBoxItem, Label, TextField, InputGroup, Button, Card, CardContent, Chip } from "@heroui/react";
 
 export interface ICD11Entry {
   icd11_code: string;
@@ -78,9 +79,9 @@ export default function HITLDashboard({
   };
 
   return (
-    <section className="w-[55%] bg-white flex flex-col h-full overflow-hidden">
+    <section className="w-full md:w-[55%] bg-white flex flex-col h-full overflow-hidden">
       {/* TopAppBar Context */}
-      <div className="flex justify-between items-center w-full px-6 py-4 bg-surface border-b border-outline-variant">
+      <div className="flex justify-between items-center w-full px-6 py-4 bg-surface border-b border-outline-variant flex-shrink-0">
         <div className="flex flex-col">
           <span className="font-headline-md text-headline-md font-bold text-primary">
             Validation Workbench
@@ -89,26 +90,28 @@ export default function HITLDashboard({
             Batch #B-992-KKM-2024
           </span>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <button className="text-on-surface-variant hover:text-primary transition-transform active:scale-90 cursor-pointer">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <button className="p-1.5 text-on-surface-variant hover:text-primary transition-transform active:scale-90 cursor-pointer rounded-lg flex items-center justify-center">
               <span className="material-symbols-outlined">notifications</span>
             </button>
-            <button className="text-on-surface-variant hover:text-primary transition-transform active:scale-90 cursor-pointer">
+            <button className="p-1.5 text-on-surface-variant hover:text-primary transition-transform active:scale-90 cursor-pointer rounded-lg flex items-center justify-center">
               <span className="material-symbols-outlined">account_circle</span>
             </button>
           </div>
-          <button
-            onClick={handleApproveClick}
-            className="bg-primary text-on-primary px-4 py-2 rounded font-title-sm text-title-sm hover:opacity-90 transition-transform active:scale-95 shadow-sm cursor-pointer"
+          <Button
+            variant="primary"
+            size="sm"
+            onPress={handleApproveClick}
+            className="font-bold text-xs shadow-sm h-9 px-4 hidden sm:flex"
           >
             Approve Batch
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Dynamic Content Scrollable Body */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 md:space-y-8 scrollbar-hide">
         {/* A. ACTIVE PROGRESS TRACKER (LangGraph) */}
         <section>
           <div className="flex items-center justify-between mb-4">
@@ -120,35 +123,35 @@ export default function HITLDashboard({
               Real-time Node
             </span>
           </div>
-          <div className="relative flex items-center justify-between">
-            <div className="absolute h-0.5 bg-outline-variant w-[90%] left-[5%] -z-10 top-5"></div>
+          <div className="relative flex items-center justify-between px-2">
+            <div className="absolute h-0.5 bg-outline-variant w-[86%] left-[7%] -z-10 top-5"></div>
             {/* Step 1 */}
-            <div className="flex flex-col items-center gap-2 bg-white px-2">
+            <div className="flex flex-col items-center gap-1 bg-white px-1">
               <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-xs">
                 <span className="material-symbols-outlined text-sm">check</span>
               </div>
-              <span className="text-[10px] font-bold text-on-surface-variant">Parsing Layout</span>
+              <span className="text-[9px] md:text-[10px] font-bold text-on-surface-variant text-center">Parsing Layout</span>
             </div>
             {/* Step 2 */}
-            <div className="flex flex-col items-center gap-2 bg-white px-2">
+            <div className="flex flex-col items-center gap-1 bg-white px-1">
               <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-xs">
                 <span className="material-symbols-outlined text-sm">check</span>
               </div>
-              <span className="text-[10px] font-bold text-on-surface-variant">Scrubbing PHI</span>
+              <span className="text-[9px] md:text-[10px] font-bold text-on-surface-variant text-center">Scrubbing PHI</span>
             </div>
             {/* Step 3 */}
-            <div className="flex flex-col items-center gap-2 bg-white px-2">
+            <div className="flex flex-col items-center gap-1 bg-white px-1">
               <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-xs">
                 <span className="material-symbols-outlined text-sm">check</span>
               </div>
-              <span className="text-[10px] font-bold text-on-surface-variant">Data Extraction</span>
+              <span className="text-[9px] md:text-[10px] font-bold text-on-surface-variant text-center">Data Extraction</span>
             </div>
             {/* Step 4 (Active) */}
-            <div className="flex flex-col items-center gap-2 bg-white px-2">
+            <div className="flex flex-col items-center gap-1 bg-white px-1">
               <div className="w-10 h-10 rounded-full bg-white border-2 border-primary text-primary flex items-center justify-center shadow-xs pulse-active">
                 <span className="material-symbols-outlined text-sm">person_search</span>
               </div>
-              <span className="text-[10px] font-bold text-primary">Human Verification</span>
+              <span className="text-[9px] md:text-[10px] font-bold text-primary text-center">Human Review</span>
             </div>
           </div>
         </section>
@@ -161,63 +164,79 @@ export default function HITLDashboard({
             </h3>
             <span className="material-symbols-outlined text-slate-400 text-sm">info</span>
           </div>
-          <div className="grid grid-cols-3 gap-3 bg-surface-container-low p-4 rounded-xl border border-outline-variant shadow-xs">
-            <div className="space-y-1">
-              <label className="font-label-caps text-label-caps text-on-surface-variant/60 block">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-surface-container-low p-4 rounded-xl border border-outline-variant shadow-xs">
+            <TextField 
+              name="name" 
+              value={demographics.name} 
+              onChange={(val) => handleDemographicsChange("name", val)}
+              className="flex flex-col gap-1.5"
+            >
+              <Label className="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-[0.05em]">
                 Patient Name
-              </label>
-              <input
-                className="w-full bg-white border border-outline-variant rounded p-2 text-sm font-bold focus:ring-primary focus:border-primary focus:outline-none"
-                type="text"
-                value={demographics.name}
-                onChange={(e) => handleDemographicsChange("name", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="font-label-caps text-label-caps text-on-surface-variant/60 block">
+              </Label>
+              <InputGroup className="border-outline-variant h-10 min-h-10 bg-white focus-within:!border-primary border rounded px-3 flex items-center">
+                <InputGroup.Input className="w-full h-full text-sm font-bold text-on-surface focus:outline-none" />
+              </InputGroup>
+            </TextField>
+            <TextField 
+              name="icNumber" 
+              value={demographics.icNumber} 
+              onChange={(val) => handleDemographicsChange("icNumber", val)}
+              className="flex flex-col gap-1.5"
+            >
+              <Label className="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-[0.05em]">
                 ID Number (IC)
-              </label>
-              <input
-                className="w-full bg-white border border-outline-variant rounded p-2 text-sm font-mono focus:ring-primary focus:border-primary focus:outline-none"
-                type="text"
-                value={demographics.icNumber}
-                onChange={(e) => handleDemographicsChange("icNumber", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="font-label-caps text-label-caps text-on-surface-variant/60 block">
+              </Label>
+              <InputGroup className="border-outline-variant h-10 min-h-10 bg-white focus-within:!border-primary border rounded px-3 flex items-center">
+                <InputGroup.Input className="w-full h-full text-sm font-mono text-on-surface focus:outline-none" />
+              </InputGroup>
+            </TextField>
+            <Select
+              selectedKey={demographics.gender}
+              onSelectionChange={(key) => {
+                handleDemographicsChange("gender", key?.toString() || "");
+              }}
+            >
+              <Label className="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-[0.05em] mb-1.5 block">
                 Gender
-              </label>
-              <select
-                className="w-full bg-white border border-outline-variant rounded p-2 text-sm focus:ring-primary focus:border-primary focus:outline-none"
-                value={demographics.gender}
-                onChange={(e) => handleDemographicsChange("gender", e.target.value)}
-              >
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label className="font-label-caps text-label-caps text-on-surface-variant/60 block">
+              </Label>
+              <SelectTrigger className="border-outline-variant h-10 min-h-10 bg-white focus-within:!border-primary px-3 rounded flex items-center justify-between w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectPopover className="bg-white border border-outline-variant rounded shadow-md z-50 min-w-[120px]">
+                <ListBox>
+                  <ListBoxItem id="Male" textValue="Male">Male</ListBoxItem>
+                  <ListBoxItem id="Female" textValue="Female">Female</ListBoxItem>
+                </ListBox>
+              </SelectPopover>
+            </Select>
+            <TextField 
+              name="age" 
+              value={demographics.age} 
+              onChange={(val) => handleDemographicsChange("age", val)}
+              className="flex flex-col gap-1.5"
+            >
+              <Label className="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-[0.05em]">
                 Age
-              </label>
-              <input
-                className="w-full bg-white border border-outline-variant rounded p-2 text-sm font-mono focus:ring-primary focus:border-primary focus:outline-none"
-                type="text"
-                value={demographics.age}
-                onChange={(e) => handleDemographicsChange("age", e.target.value)}
-              />
-            </div>
-            <div className="space-y-1 col-span-2">
-              <label className="font-label-caps text-label-caps text-on-surface-variant/60 block">
-                Admission Date
-              </label>
-              <input
-                className="w-full bg-white border border-outline-variant rounded p-2 text-sm font-mono focus:ring-primary focus:border-primary focus:outline-none"
-                type="text"
-                value={demographics.admissionDate}
-                onChange={(e) => handleDemographicsChange("admissionDate", e.target.value)}
-              />
+              </Label>
+              <InputGroup className="border-outline-variant h-10 min-h-10 bg-white focus-within:!border-primary border rounded px-3 flex items-center">
+                <InputGroup.Input className="w-full h-full text-sm font-mono text-on-surface focus:outline-none" />
+              </InputGroup>
+            </TextField>
+            <div className="sm:col-span-2">
+              <TextField 
+                name="admissionDate" 
+                value={demographics.admissionDate} 
+                onChange={(val) => handleDemographicsChange("admissionDate", val)}
+                className="flex flex-col gap-1.5"
+              >
+                <Label className="text-[11px] font-bold text-on-surface-variant/70 uppercase tracking-[0.05em]">
+                  Admission Date
+                </Label>
+                <InputGroup className="border-outline-variant h-10 min-h-10 bg-white focus-within:!border-primary border rounded px-3 flex items-center">
+                  <InputGroup.Input className="w-full h-full text-sm font-mono text-on-surface focus:outline-none" />
+                </InputGroup>
+              </TextField>
             </div>
           </div>
         </section>
@@ -230,7 +249,7 @@ export default function HITLDashboard({
             </h3>
             <button
               onClick={handleAddSecondaryDiagnosis}
-              className="text-primary text-[11px] font-bold flex items-center gap-1 hover:underline cursor-pointer"
+              className="text-primary text-[11px] font-bold flex items-center gap-1 hover:underline cursor-pointer focus:outline-none"
             >
               <span className="material-symbols-outlined text-[14px]">add</span>
               Add Secondary Diagnosis
@@ -238,81 +257,77 @@ export default function HITLDashboard({
           </div>
 
           {/* MAIN DIAGNOSIS */}
-          <div className="relative border-2 border-primary-fixed p-5 rounded-xl bg-primary/5">
-            <div className="absolute -top-3 right-4 bg-primary text-white text-[10px] font-bold px-3 py-0.5 rounded-full">
-              AI Generated • {mainDiagnosis.confidence ? `${(mainDiagnosis.confidence * 100).toFixed(1)}%` : "98.4%"} Confidence
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="flex flex-col gap-2">
-                <div className="bg-primary text-white font-mono text-[18px] px-4 py-3 rounded-lg shadow-sm font-bold text-center">
+          <Card className="border-2 border-primary-fixed bg-primary/5 shadow-sm rounded-xl relative overflow-visible">
+            <CardContent className="p-5 flex flex-col sm:flex-row gap-4 relative">
+              <div className="absolute -top-3 right-4 bg-primary text-white text-[10px] font-bold px-3 py-0.5 rounded-full shadow-xs">
+                AI Generated • {mainDiagnosis.confidence ? `${(mainDiagnosis.confidence * 100).toFixed(1)}%` : "98.4%"} Confidence
+              </div>
+              <div className="flex flex-col gap-2 flex-shrink-0 mt-2 sm:mt-0">
+                <div className="bg-primary text-white font-mono text-[18px] px-4 py-2.5 rounded-lg shadow-sm font-bold text-center">
                   {mainDiagnosis.icd11_code}
                 </div>
                 <input
                   type="text"
                   value={mainDiagnosis.icd11_code}
                   onChange={(e) => handleMainDiagnosisChange("icd11_code", e.target.value)}
-                  className="w-20 border border-outline-variant bg-white p-1 rounded text-center text-xs font-mono focus:outline-none"
+                  className="w-20 border border-outline-variant bg-white p-1 rounded text-center text-xs font-mono focus:outline-none focus:border-primary"
                   placeholder="Code"
                 />
               </div>
-              <div className="flex-1 space-y-3">
+              <div className="flex-1 space-y-2 mt-1 sm:mt-0">
                 <label className="font-label-caps text-label-caps text-primary block">
                   Main Diagnosis Description
                 </label>
                 <textarea
-                  className="w-full border border-outline-variant rounded text-sm bg-white focus:ring-primary p-2 focus:outline-none"
+                  className="w-full border border-outline-variant rounded text-sm bg-white focus:outline-none focus:border-primary p-2"
                   rows={2}
                   value={mainDiagnosis.diagnosis_text}
                   onChange={(e) => handleMainDiagnosisChange("diagnosis_text", e.target.value)}
                 />
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* OTHER DIAGNOSES */}
-          <div className="space-y-3">
+          <div className="space-y-3.5">
             {otherDiagnoses.map((diag, index) => (
               <div
                 key={index}
-                className={`relative flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                className={`relative flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl border transition-all ${
                   diag.source === "user"
-                    ? "bg-tertiary-fixed-dim/10 border-tertiary/20"
+                    ? "bg-secondary-fixed/10 border-secondary/20"
                     : "bg-surface-container border-outline-variant"
                 }`}
               >
-                <div className="flex flex-col gap-1">
-                  <span className="font-mono text-sm font-bold bg-white text-on-surface px-3 py-2 border border-outline-variant rounded text-center min-w-16">
+                <div className="flex flex-row sm:flex-col gap-1 items-center sm:items-start flex-shrink-0">
+                  <span className="font-mono text-sm font-bold bg-white text-on-surface px-3 py-1.5 border border-outline-variant rounded text-center min-w-[70px]">
                     {diag.icd11_code}
                   </span>
                   <input
                     type="text"
                     value={diag.icd11_code}
                     onChange={(e) => handleOtherDiagnosisChange(index, "icd11_code", e.target.value)}
-                    className="w-16 border border-outline-variant bg-white p-0.5 rounded text-center text-[10px] font-mono focus:outline-none"
+                    className="w-16 border border-outline-variant bg-white p-0.5 rounded text-center text-[10px] font-mono focus:outline-none focus:border-secondary"
                     placeholder="Code"
                   />
                 </div>
                 <input
-                  className="flex-1 text-sm font-medium text-on-surface-variant bg-transparent border-none focus:ring-0 focus:outline-none"
+                  className="flex-1 text-sm font-medium text-on-surface bg-transparent border-none focus:ring-0 focus:outline-none p-0"
                   type="text"
                   value={diag.diagnosis_text}
                   onChange={(e) => handleOtherDiagnosisChange(index, "diagnosis_text", e.target.value)}
                 />
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-[10px] px-2 py-1 rounded font-bold uppercase ${
-                      diag.source === "user"
-                        ? "bg-tertiary text-white"
-                        : diag.source === "static"
-                        ? "bg-primary-fixed/30 text-on-primary-fixed-variant"
-                        : "bg-primary-container text-on-primary-container"
-                    }`}
+                <div className="flex items-center justify-between sm:justify-end gap-2.5 mt-2 sm:mt-0">
+                  <Chip
+                    size="sm"
+                    variant={diag.source === "user" ? "secondary" : "primary"}
+                    className="font-bold text-[9px] uppercase h-6 px-2.5"
                   >
                     {diag.source === "user" ? "User Modified" : "AI Predicted"}
-                  </span>
+                  </Chip>
                   <button
                     onClick={() => handleRemoveSecondaryDiagnosis(index)}
-                    className="text-red-500 hover:text-red-700 cursor-pointer"
+                    className="text-red-500 hover:text-red-700 cursor-pointer p-1 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center"
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
                   </button>
@@ -331,7 +346,7 @@ export default function HITLDashboard({
             <div>
               <h4 className="font-bold text-error text-[13px]">SMRP Validation Flag: Rule Mismatch Detected</h4>
               {data.validationAlerts.map((alertText, index) => (
-                <p key={index} className="text-[12px] text-on-surface-variant mt-1">
+                <p key={index} className="text-[12px] text-on-surface-variant mt-1 leading-relaxed">
                   {alertText}
                 </p>
               ))}
@@ -342,28 +357,31 @@ export default function HITLDashboard({
       </div>
 
       {/* E. FOOTER (Sticky) */}
-      <div className="mt-auto bg-white border-t border-outline-variant px-6 py-4 flex items-center justify-between shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onReject}
-            className="px-4 py-2 border border-error text-error font-title-sm text-title-sm rounded hover:bg-error/5 transition-colors cursor-pointer"
+      <div className="mt-auto bg-white border-t border-outline-variant px-6 py-4 flex flex-col sm:flex-row gap-3 items-center justify-between shadow-[0_-4px_12px_rgba(0,0,0,0.03)] flex-shrink-0">
+        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+          <Button
+            variant="outline"
+            onPress={onReject}
+            className="font-bold text-xs h-10 border-error text-error hover:bg-error/5"
           >
             Reject / Re-run
-          </button>
-          <button
-            onClick={onEscalate}
-            className="px-4 py-2 border border-outline text-on-surface-variant font-title-sm text-title-sm rounded hover:bg-slate-50 transition-colors cursor-pointer"
+          </Button>
+          <Button
+            variant="outline"
+            onPress={onEscalate}
+            className="border-outline text-on-surface-variant font-bold text-xs h-10"
           >
             Escalate Node
-          </button>
+          </Button>
         </div>
-        <button
-          onClick={handleApproveClick}
-          className="bg-primary-container text-on-primary-container px-6 py-3 rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-transform active:scale-95 shadow-md cursor-pointer"
+        <Button
+          variant="primary"
+          onPress={handleApproveClick}
+          className="font-bold text-sm w-full sm:w-auto shadow-md h-10 flex items-center justify-center gap-2"
         >
-          <span className="material-symbols-outlined">send</span>
-          Approve &amp; Submit to SMRP Portal
-        </button>
+          <span className="material-symbols-outlined text-[16px]">send</span>
+          <span>Approve &amp; Submit to SMRP Portal</span>
+        </Button>
       </div>
     </section>
   );
