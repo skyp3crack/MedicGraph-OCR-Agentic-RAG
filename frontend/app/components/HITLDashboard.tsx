@@ -31,6 +31,8 @@ interface HITLDashboardProps {
   onReject: () => void;
   onEscalate: () => void;
   isLoading?: boolean;
+  graphStatus?: string;
+  isIngesting?: boolean;
 }
 
 export default function HITLDashboard({
@@ -39,12 +41,85 @@ export default function HITLDashboard({
   onReject,
   onEscalate,
   isLoading = false,
+  graphStatus = "idle",
+  isIngesting = false,
 }: HITLDashboardProps) {
   const [demographics, setDemographics] = useState<Demographics>({ ...data.demographics });
   const [mainDiagnosis, setMainDiagnosis] = useState<ICD11Entry>({ ...data.mainDiagnosis });
   const [otherDiagnoses, setOtherDiagnoses] = useState<ICD11Entry[]>([
     ...data.otherDiagnoses.map((d) => ({ ...d })),
   ]);
+
+  // Helper to determine step status: 'completed' | 'active' | 'pending'
+  const getStepStatus = (stepIndex: number) => {
+    if (graphStatus === "idle") {
+      return "pending";
+    }
+    
+    // Step 1: Parsing Layout
+    if (stepIndex === 1) {
+      if (graphStatus === "parsing") return "active";
+      if (["extracting", "scrubbing", "indexing", "review_pending", "approved", "rejected", "escalated", "completed"].includes(graphStatus)) {
+        return "completed";
+      }
+      return "pending";
+    }
+    
+    // Step 2: Scrubbing PHI
+    if (stepIndex === 2) {
+      if (["scrubbing", "indexing"].includes(graphStatus)) return "active";
+      if (["review_pending", "approved", "rejected", "escalated", "completed"].includes(graphStatus)) {
+        return "completed";
+      }
+      return "pending";
+    }
+    
+    // Step 3: Data Extraction
+    if (stepIndex === 3) {
+      if (graphStatus === "extracting") return "active";
+      if (["scrubbing", "indexing", "review_pending", "approved", "rejected", "escalated", "completed"].includes(graphStatus)) {
+        return "completed";
+      }
+      return "pending";
+    }
+    
+    // Step 4: Human Review
+    if (stepIndex === 4) {
+      if (graphStatus === "review_pending") return "active";
+      if (["approved", "rejected", "escalated", "completed"].includes(graphStatus)) {
+        return "completed";
+      }
+      return "pending";
+    }
+    
+    return "pending";
+  };
+
+  const renderStepCircle = (stepIndex: number, defaultIcon: string) => {
+    const status = getStepStatus(stepIndex);
+    
+    if (status === "completed") {
+      return (
+        <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-xs">
+          <span className="material-symbols-outlined text-sm">check</span>
+        </div>
+      );
+    }
+    
+    if (status === "active") {
+      return (
+        <div className="w-10 h-10 rounded-full bg-white border-2 border-primary text-primary flex items-center justify-center shadow-xs animate-pulse pulse-active">
+          <span className="material-symbols-outlined text-sm">{defaultIcon}</span>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="w-10 h-10 rounded-full bg-white border-2 border-outline-variant text-on-surface-variant/40 flex items-center justify-center shadow-xs">
+        <span className="material-symbols-outlined text-sm">{defaultIcon}</span>
+      </div>
+    );
+  };
 
   useEffect(() => {
     setDemographics({ ...data.demographics });
@@ -149,31 +224,23 @@ export default function HITLDashboard({
             <div className="absolute h-0.5 bg-outline-variant w-[86%] left-[7%] -z-10 top-5"></div>
             {/* Step 1 */}
             <div className="flex flex-col items-center gap-1 bg-white px-1">
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-xs">
-                <span className="material-symbols-outlined text-sm">check</span>
-              </div>
-              <span className="text-[9px] md:text-[10px] font-bold text-on-surface-variant text-center">Parsing Layout</span>
+              {renderStepCircle(1, "description")}
+              <span className={`text-[9px] md:text-[10px] font-bold text-center ${getStepStatus(1) === "active" ? "text-primary" : "text-on-surface-variant"}`}>Parsing Layout</span>
             </div>
             {/* Step 2 */}
             <div className="flex flex-col items-center gap-1 bg-white px-1">
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-xs">
-                <span className="material-symbols-outlined text-sm">check</span>
-              </div>
-              <span className="text-[9px] md:text-[10px] font-bold text-on-surface-variant text-center">Scrubbing PHI</span>
+              {renderStepCircle(2, "shield")}
+              <span className={`text-[9px] md:text-[10px] font-bold text-center ${getStepStatus(2) === "active" ? "text-primary" : "text-on-surface-variant"}`}>Scrubbing PHI</span>
             </div>
             {/* Step 3 */}
             <div className="flex flex-col items-center gap-1 bg-white px-1">
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-xs">
-                <span className="material-symbols-outlined text-sm">check</span>
-              </div>
-              <span className="text-[9px] md:text-[10px] font-bold text-on-surface-variant text-center">Data Extraction</span>
+              {renderStepCircle(3, "clinical_notes")}
+              <span className={`text-[9px] md:text-[10px] font-bold text-center ${getStepStatus(3) === "active" ? "text-primary" : "text-on-surface-variant"}`}>Data Extraction</span>
             </div>
-            {/* Step 4 (Active) */}
+            {/* Step 4 */}
             <div className="flex flex-col items-center gap-1 bg-white px-1">
-              <div className="w-10 h-10 rounded-full bg-white border-2 border-primary text-primary flex items-center justify-center shadow-xs pulse-active">
-                <span className="material-symbols-outlined text-sm">person_search</span>
-              </div>
-              <span className="text-[9px] md:text-[10px] font-bold text-primary text-center">Human Review</span>
+              {renderStepCircle(4, "person_search")}
+              <span className={`text-[9px] md:text-[10px] font-bold text-center ${getStepStatus(4) === "active" ? "text-primary" : "text-on-surface-variant"}`}>Human Review</span>
             </div>
           </div>
         </section>

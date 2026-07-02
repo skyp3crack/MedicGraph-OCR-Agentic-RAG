@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PDFViewer from "./components/PDFViewer";
 import HITLDashboard, { HITLData } from "./components/HITLDashboard";
-import { uploadPdf, queryDocument, extractClinicalData, submitAuditAction, SourceChunk } from "./utils/api";
+import { uploadPdf, queryDocument, extractClinicalData, submitAuditAction, getDocumentStatus, SourceChunk } from "./utils/api";
 import { useAuth } from "./contexts/AuthContext";
 import { Dropdown, DropdownPopover, DropdownMenu, DropdownItem, TextField, InputGroup, Button, Label } from "@heroui/react";
 
@@ -67,6 +67,7 @@ export default function Home() {
   // Dynamic Clinical Extraction State
   const [clinicalData, setClinicalData] = useState<HITLData | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [graphStatus, setGraphStatus] = useState<string>("idle");
 
   // Auth guard: redirect to sign-in if not authenticated
   useEffect(() => {
@@ -90,10 +91,97 @@ export default function Home() {
   // Don't render dashboard if not authenticated
   if (!isAuthenticated) return null;
 
+  // Polling Status Handler
+  const pollWorkflowStatus = (docId: string, filename: string) => {
+    setGraphStatus("parsing");
+    
+    const interval = setInterval(async () => {
+      try {
+        const res = await getDocumentStatus(docId);
+        setGraphStatus(res.status);
+        
+        if (res.status === "review_pending") {
+          clearInterval(interval);
+          setIsIngesting(false);
+          
+          // Successful ingestion up to review stage. Retrieve the pre-extracted data.
+          setIsExtracting(true);
+          try {
+            const extraction = await extractClinicalData(docId);
+            const formatted: HITLData = {
+              demographics: {
+                name: extraction.demographics.name,
+                icNumber: extraction.demographics.ic_number,
+                gender: extraction.demographics.gender,
+                age: extraction.demographics.age,
+                admissionDate: extraction.demographics.admission_date,
+              },
+              mainDiagnosis: {
+                icd11_code: extraction.main_diagnosis.icd11_code,
+                diagnosis_text: extraction.main_diagnosis.diagnosis_text,
+                source: extraction.main_diagnosis.source as "ai" | "static" | "user",
+                confidence: extraction.main_diagnosis.confidence,
+              },
+              otherDiagnoses: extraction.other_diagnoses.map((d: any) => ({
+                icd11_code: d.icd11_code,
+                diagnosis_text: d.diagnosis_text,
+                source: d.source as "ai" | "static" | "user",
+              })),
+              validationAlerts: extraction.validation_alerts,
+            };
+            setClinicalData(formatted);
+            
+            setExtractedText(
+              `--- Extracted Document: ${filename} ---\n` +
+              `UUID: ${docId}\n` +
+              `Status: Paused at human_review node.\n\n` +
+              `All clinical data extracted and de-identified chunks indexed into ChromaDB.\n` +
+              `Please use the ARIF Assistant panel in the sidebar to ask questions.`
+            );
+            
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                sender: "arif",
+                text: "Clinical extraction completed! Patient records and ICD-11 mapping have been updated in the right workbench panel.",
+              },
+            ]);
+          } catch (extractErr: any) {
+            console.error(extractErr);
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                sender: "arif",
+                text: `Clinical extraction failed: ${extractErr.message || "Failed to extract structured data"}.`,
+              },
+            ]);
+          } finally {
+            setIsExtracting(false);
+          }
+        } else if (res.status === "failed") {
+          clearInterval(interval);
+          setIsIngesting(false);
+          setChatMessages((prev) => [
+            ...prev,
+            {
+              sender: "arif",
+              text: `Ingestion failed: ${res.error_message || "Unknown graph execution error"}.`,
+            },
+          ]);
+        }
+      } catch (err: any) {
+        console.error("Error polling status:", err);
+        clearInterval(interval);
+        setIsIngesting(false);
+      }
+    }, 1500);
+  };
+
   // Ingestion Handler
   const handleFileSelect = async (file: File) => {
     setSelectedFile(file);
     setIsIngesting(true);
+    setGraphStatus("parsing");
     
     // Reset states
     setDocumentId(null);
@@ -107,68 +195,20 @@ export default function Home() {
       const response = await uploadPdf(file);
       setDocumentId(response.document_id);
       
-      setExtractedText(
-        `--- Extracted Document: ${file.name} ---\n` +
-        `UUID: ${response.document_id}\n` +
-        `Ingested into ${response.num_chunks} text chunks.\n\n` +
-        `Please use the ARIF Assistant panel in the sidebar to run retrieval-augmented queries against the document content.`
-      );
-
       setChatMessages((prev) => [
         ...prev,
         {
           sender: "arif",
-          text: `Successfully ingested document! ID: ${response.document_id}. Now running clinical extraction...`,
+          text: `PDF uploaded successfully! ID: ${response.document_id}. Running LangGraph agentic pipeline...`,
         },
       ]);
 
-      // Trigger dynamic clinical data extraction
-      setIsExtracting(true);
-      try {
-        const extraction = await extractClinicalData(response.document_id);
-        const formatted: HITLData = {
-          demographics: {
-            name: extraction.demographics.name,
-            icNumber: extraction.demographics.ic_number,
-            gender: extraction.demographics.gender,
-            age: extraction.demographics.age,
-            admissionDate: extraction.demographics.admission_date,
-          },
-          mainDiagnosis: {
-            icd11_code: extraction.main_diagnosis.icd11_code,
-            diagnosis_text: extraction.main_diagnosis.diagnosis_text,
-            source: extraction.main_diagnosis.source as "ai" | "static" | "user",
-            confidence: extraction.main_diagnosis.confidence,
-          },
-          otherDiagnoses: extraction.other_diagnoses.map((d: any) => ({
-            icd11_code: d.icd11_code,
-            diagnosis_text: d.diagnosis_text,
-            source: d.source as "ai" | "static" | "user",
-          })),
-          validationAlerts: extraction.validation_alerts,
-        };
-        setClinicalData(formatted);
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            sender: "arif",
-            text: "Clinical extraction completed! Patient records and ICD-11 mapping have been updated in the right workbench panel.",
-          },
-        ]);
-      } catch (extractErr: any) {
-        console.error(extractErr);
-        setChatMessages((prev) => [
-          ...prev,
-          {
-            sender: "arif",
-            text: `Clinical extraction failed: ${extractErr.message || "Failed to extract structured data"}.`,
-          },
-        ]);
-      } finally {
-        setIsExtracting(false);
-      }
+      // Start polling the state graph progress
+      pollWorkflowStatus(response.document_id, file.name);
     } catch (err: any) {
       console.error(err);
+      setIsIngesting(false);
+      setGraphStatus("failed");
       setChatMessages((prev) => [
         ...prev,
         {
@@ -177,8 +217,6 @@ export default function Home() {
         },
       ]);
       alert(`Upload error: ${err.message || "Failed to connect to backend server."}`);
-    } finally {
-      setIsIngesting(false);
     }
   };
 
@@ -513,6 +551,8 @@ export default function Home() {
           onReject={handleReject}
           onEscalate={handleEscalate}
           isLoading={isExtracting}
+          graphStatus={graphStatus}
+          isIngesting={isIngesting}
         />
       </main>
     </div>

@@ -172,3 +172,24 @@ export async function submitAuditAction(
 
   return response.json();
 }
+
+export interface DocumentStatusResponse {
+  document_id: string;
+  status: string;
+  error_message?: string;
+}
+
+/**
+ * Get the current LangGraph workflow status for a document
+ * @param documentId The UUID of the document
+ */
+export async function getDocumentStatus(
+  documentId: string
+): Promise<DocumentStatusResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/status`);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Failed to retrieve document status.");
+  }
+  return response.json();
+}
