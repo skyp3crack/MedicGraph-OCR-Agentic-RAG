@@ -1,6 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 @import "tailwindcss";
-
+@import "@heroui/styles";
+@source "../node_modules/@heroui/theme/dist";
 
 @theme {
   /* Colors mapping from DESIGN.md */
@@ -130,5 +130,16 @@ body {
   }
   50% {
     opacity: .5;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
