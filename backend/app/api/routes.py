@@ -11,8 +11,10 @@ import os
 import uuid
 import shutil
 import logging
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+import json
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from app.schemas.requests import QueryRequest
 from app.schemas.responses import UploadResponse, QueryResponse, HealthResponse
@@ -22,9 +24,87 @@ from app.Services.extraction_service import ExtractionService
 from app.config import get_settings
 from app.Agents.clinical_graph import clinical_graph
 
+# Database and Security integrations
+from app.database import get_db
+from app.models.models import User, AuditLog
+from app.utils.auth_utils import get_current_user, hash_password, verify_password, encode_jwt
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["MedicGraph RAG"])
+
+
+# --- Authentication Schemas ---
+
+class SignupRequest(BaseModel):
+    email: str
+    password: str
+    name: str
+
+
+class SigninRequest(BaseModel):
+    email: str
+    password: str
+
+
+# --- Authentication Endpoints ---
+
+@router.post("/auth/signup")
+async def signup(request: SignupRequest, db: Session = Depends(get_db)):
+    """Register a new clinician account."""
+    existing_user = db.query(User).filter(User.email == request.email.lower().strip()).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="An account with this email already exists."
+        )
+    
+    # Create new clinician user
+    hashed_pwd = hash_password(request.password)
+    user = User(
+        email=request.email.lower().strip(),
+        name=request.name.strip(),
+        hashed_password=hashed_pwd,
+        role="clinician"
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    # Generate JWT
+    token = encode_jwt({"sub": user.email})
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "email": user.email,
+            "name": user.name,
+            "role": user.role
+        }
+    }
+
+
+@router.post("/auth/signin")
+async def signin(request: SigninRequest, db: Session = Depends(get_db)):
+    """Authenticate and sign in a clinician."""
+    user = db.query(User).filter(User.email == request.email.lower().strip()).first()
+    if not user or not verify_password(request.password, user.hashed_password):
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid email or password. Please try again."
+        )
+    
+    # Generate JWT
+    token = encode_jwt({"sub": user.email})
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "email": user.email,
+            "name": user.name,
+            "role": user.role
+        }
+    }
 
 # Singleton RAG service instance — initialized on first use
 _rag_service: RAGService | None = None
@@ -69,7 +149,11 @@ def run_graph_in_background(document_id: str, file_path: str):
 
 
 @router.post("/upload", response_model=UploadResponse)
-async def upload_pdf(file: UploadFile = File(...), background_tasks: BackgroundTasks = None):
+async def upload_pdf(
+    file: UploadFile = File(...),
+    background_tasks: BackgroundTasks = None,
+    current_user: User = Depends(get_current_user)
+):
     """
     Upload a medical report PDF for stateful ingestion using LangGraph.
 
@@ -121,7 +205,7 @@ async def upload_pdf(file: UploadFile = File(...), background_tasks: BackgroundT
 
 
 @router.post("/query", response_model=QueryResponse)
-async def query_document(request: QueryRequest):
+async def query_document(request: QueryRequest, current_user: User = Depends(get_current_user)):
     """
     Ask a natural-language question about a previously ingested medical report.
 
@@ -151,7 +235,7 @@ async def query_document(request: QueryRequest):
 
 
 @router.post("/extract", response_model=ClinicalExtractionResponse)
-async def extract_clinical_data(request: QueryRequest):
+async def extract_clinical_data(request: QueryRequest, current_user: User = Depends(get_current_user)):
     """
     Retrieve pre-extracted structured clinical data from the active LangGraph session.
     """
@@ -189,7 +273,11 @@ class AuditActionRequest(BaseModel):
 
 
 @router.post("/audit/action")
-async def audit_action(request: AuditActionRequest):
+async def audit_action(
+    request: AuditActionRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
     Resume LangGraph execution by applying clinician audit decisions (Approve, Reject, Escalate).
     """
@@ -205,6 +293,7 @@ async def audit_action(request: AuditActionRequest):
             "audit_action": request.action
         }
         
+        edited_fields = []
         if request.payload:
             # Save any edits made by clinician on the dashboard back into state graph
             extraction = dict(state.values.get("extraction", {}))
@@ -218,6 +307,7 @@ async def audit_action(request: AuditActionRequest):
                     "age": demo.get("age", ""),
                     "admission_date": demo.get("admissionDate", demo.get("admission_date", ""))
                 }
+                edited_fields.append("demographics")
             if "mainDiagnosis" in request.payload:
                 md = request.payload["mainDiagnosis"]
                 extraction["main_diagnosis"] = {
@@ -226,6 +316,7 @@ async def audit_action(request: AuditActionRequest):
                     "source": md.get("source", "user"),
                     "confidence": md.get("confidence", 1.0)
                 }
+                edited_fields.append("main_diagnosis")
             if "otherDiagnoses" in request.payload:
                 od = request.payload["otherDiagnoses"]
                 extraction["other_diagnoses"] = [
@@ -236,6 +327,7 @@ async def audit_action(request: AuditActionRequest):
                         "confidence": d.get("confidence", 1.0)
                     } for d in od
                 ]
+                edited_fields.append("other_diagnoses")
             update_data["extraction"] = extraction
             
         # Update thread state
@@ -246,6 +338,22 @@ async def audit_action(request: AuditActionRequest):
         
         final_state = clinical_graph.get_state(config)
         final_status = final_state.values.get("status", "review_pending") if final_state else "completed"
+        
+        # Record de-identified audit log (never logs PHI raw values)
+        log_payload = {
+            "edited_fields": edited_fields,
+            "has_payload": request.payload is not None,
+            "action": request.action
+        }
+        
+        new_log = AuditLog(
+            document_id=request.document_id,
+            clinician_email=current_user.email,
+            action=request.action,
+            payload=json.dumps(log_payload)
+        )
+        db.add(new_log)
+        db.commit()
         
         return {
             "status": "success",
@@ -259,7 +367,7 @@ async def audit_action(request: AuditActionRequest):
 
 
 @router.get("/documents/{document_id}/status")
-async def get_document_status(document_id: str):
+async def get_document_status(document_id: str, current_user: User = Depends(get_current_user)):
     """
     Get the current LangGraph execution status for a document.
     """
@@ -280,6 +388,30 @@ async def get_document_status(document_id: str):
     except Exception as e:
         logger.error(f"Status check failed for {document_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Status check failed: {e}")
+
+
+@router.get("/audit/logs")
+async def get_audit_logs(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Retrieve historical clinician audit action logs (strictly de-identified)."""
+    try:
+        logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).all()
+        return [
+            {
+                "id": log.id,
+                "document_id": log.document_id,
+                "clinician_email": log.clinician_email,
+                "action": log.action,
+                "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+                "payload": json.loads(log.payload) if log.payload else {}
+            }
+            for log in logs
+        ]
+    except Exception as e:
+        logger.error(f"Failed to fetch audit logs: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch audit logs: {e}")
 
 
 @router.get("/health", response_model=HealthResponse)

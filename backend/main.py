@@ -36,6 +36,40 @@ async def lifespan(app: FastAPI):
     logger.info(f"  ChromaDB Dir:     {settings.chroma_persist_dir}")
     logger.info(f"  CORS Origins:     {settings.cors_origins}")
     logger.info("=" * 60)
+
+    # Initialize SQLite database and create tables
+    from app.database import engine, Base, SessionLocal
+    import app.models
+    from app.models.models import User
+    from app.utils.auth_utils import hash_password
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables initialized successfully.")
+        
+        # Seed default clinician admin user
+        db = SessionLocal()
+        try:
+            admin_email = "admin@medicograph.dev"
+            admin = db.query(User).filter(User.email == admin_email).first()
+            if not admin:
+                hashed_pwd = hash_password("admin123")
+                new_admin = User(
+                    email=admin_email,
+                    name="Dr. Admin",
+                    hashed_password=hashed_pwd,
+                    role="clinician"
+    )
+                db.add(new_admin)
+                db.commit()
+                logger.info("Default administrator clinician seeded successfully.")
+        except Exception as db_err:
+            logger.error(f"Failed to seed admin clinician: {db_err}")
+        finally:
+            db.close()
+            
+    except Exception as e:
+        logger.error(f"Failed to initialize database tables: {e}")
+
     yield
     logger.info("MedicGraph RAG API shutting down")
 
