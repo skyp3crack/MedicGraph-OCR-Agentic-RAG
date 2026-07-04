@@ -56,6 +56,85 @@ export interface HealthResponse {
   version: string;
 }
 
+export interface AuthUser {
+  email: string;
+  name: string;
+  role: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  user: AuthUser;
+}
+
+export interface AuditLogEntry {
+  id: number;
+  document_id: string;
+  clinician_email: string;
+  action: string;
+  timestamp: string;
+  payload: {
+    edited_fields?: string[];
+    has_payload?: boolean;
+    action?: string;
+  };
+}
+
+/**
+ * Get headers including Authorization JWT token if available.
+ */
+function getHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
+  const headers: Record<string, string> = { ...extraHeaders };
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("medicograph_token");
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+  return headers;
+}
+
+/**
+ * Call backend sign in endpoint
+ */
+export async function loginApi(email: string, password: string): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/signin`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Invalid email or password.");
+  }
+
+  return response.json();
+}
+
+/**
+ * Call backend sign up endpoint
+ */
+export async function signupApi(email: string, password: string, name: string): Promise<AuthResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, password, name }),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Failed to create account.");
+  }
+
+  return response.json();
+}
+
 /**
  * Upload a PDF file to the backend
  * @param file The PDF file to upload
@@ -66,6 +145,7 @@ export async function uploadPdf(file: File): Promise<UploadResponse> {
 
   const response = await fetch(`${API_BASE_URL}/api/upload`, {
     method: "POST",
+    headers: getHeaders(),
     body: formData,
   });
 
@@ -88,9 +168,9 @@ export async function queryDocument(
 ): Promise<QueryResponse> {
   const response = await fetch(`${API_BASE_URL}/api/query`, {
     method: "POST",
-    headers: {
+    headers: getHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({
       document_id: documentId,
       question: question,
@@ -125,9 +205,9 @@ export async function extractClinicalData(
 ): Promise<ClinicalExtractionResponse> {
   const response = await fetch(`${API_BASE_URL}/api/extract`, {
     method: "POST",
-    headers: {
+    headers: getHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({
       document_id: documentId,
       question: "extract", // backend endpoint expects QueryRequest which requires a 'question' parameter
@@ -155,9 +235,9 @@ export async function submitAuditAction(
 ): Promise<AuditActionResponse> {
   const response = await fetch(`${API_BASE_URL}/api/audit/action`, {
     method: "POST",
-    headers: {
+    headers: getHeaders({
       "Content-Type": "application/json",
-    },
+    }),
     body: JSON.stringify({
       document_id: documentId,
       action: action,
@@ -186,10 +266,26 @@ export interface DocumentStatusResponse {
 export async function getDocumentStatus(
   documentId: string
 ): Promise<DocumentStatusResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/status`);
+  const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/status`, {
+    headers: getHeaders(),
+  });
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.detail || "Failed to retrieve document status.");
+  }
+  return response.json();
+}
+
+/**
+ * Retrieve historical audit logs (secured, returns de-identified logs)
+ */
+export async function fetchAuditLogs(): Promise<AuditLogEntry[]> {
+  const response = await fetch(`${API_BASE_URL}/api/audit/logs`, {
+    headers: getHeaders(),
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.detail || "Failed to retrieve audit logs.");
   }
   return response.json();
 }

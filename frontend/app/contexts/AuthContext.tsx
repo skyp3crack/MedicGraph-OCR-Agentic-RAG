@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { loginApi, signupApi } from "../utils/api";
 
 // --- Types ---
 export interface User {
@@ -25,40 +26,10 @@ interface AuthContextType {
 
 // --- Constants ---
 const STORAGE_KEY = "medicograph_auth";
-const USERS_STORAGE_KEY = "medicograph_users";
-
-// Default testing user
-const DEFAULT_TEST_USER = {
-  email: "admin@medicograph.dev",
-  password: "admin123",
-  name: "Dr. Admin",
-};
+const TOKEN_KEY = "medicograph_token";
 
 // --- Context ---
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// --- Helper: get registered users from localStorage ---
-function getRegisteredUsers(): Array<{ email: string; password: string; name: string }> {
-  if (typeof window === "undefined") return [DEFAULT_TEST_USER];
-  try {
-    const raw = localStorage.getItem(USERS_STORAGE_KEY);
-    if (raw) {
-      const users = JSON.parse(raw);
-      // Ensure default test user always exists
-      const hasDefault = users.some((u: { email: string }) => u.email === DEFAULT_TEST_USER.email);
-      if (!hasDefault) users.push(DEFAULT_TEST_USER);
-      return users;
-    }
-  } catch {
-    // ignore parse errors
-  }
-  return [DEFAULT_TEST_USER];
-}
-
-function saveRegisteredUsers(users: Array<{ email: string; password: string; name: string }>) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
-}
 
 // --- Provider ---
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -70,14 +41,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (stored && token) {
         const parsed = JSON.parse(stored) as User;
         if (parsed?.email) {
           setUser(parsed);
         }
+      } else {
+        // Clear if only one of them exists
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(TOKEN_KEY);
       }
     } catch {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(TOKEN_KEY);
     } finally {
       setIsLoading(false);
     }
@@ -85,50 +62,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Login handler
   const login = useCallback(async (email: string, password: string): Promise<AuthResult> => {
-    // Simulate network delay for realism
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    const users = getRegisteredUsers();
-    const matchedUser = users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    );
-
-    if (!matchedUser) {
-      return { success: false, error: "Invalid email or password. Please try again." };
+    try {
+      const result = await loginApi(email, password);
+      
+      const sessionUser: User = { email: result.user.email, name: result.user.name };
+      localStorage.setItem(TOKEN_KEY, result.access_token);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
+      
+      setUser(sessionUser);
+      return { success: true };
+    } catch (err: any) {
+      return { 
+        success: false, 
+        error: err.message || "Invalid email or password. Please try again." 
+      };
     }
-
-    const sessionUser: User = { email: matchedUser.email, name: matchedUser.name };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
-    setUser(sessionUser);
-    return { success: true };
   }, []);
 
   // Signup handler
   const signup = useCallback(async (email: string, password: string, name: string): Promise<AuthResult> => {
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    const users = getRegisteredUsers();
-
-    // Check if email already exists
-    if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
-      return { success: false, error: "An account with this email already exists." };
+    try {
+      const result = await signupApi(email, password, name);
+      
+      const sessionUser: User = { email: result.user.email, name: result.user.name };
+      localStorage.setItem(TOKEN_KEY, result.access_token);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
+      
+      setUser(sessionUser);
+      return { success: true };
+    } catch (err: any) {
+      return { 
+        success: false, 
+        error: err.message || "Failed to register clinician account." 
+      };
     }
-
-    // Register new user
-    const newUser = { email, password, name };
-    users.push(newUser);
-    saveRegisteredUsers(users);
-
-    // Auto-login
-    const sessionUser: User = { email, name };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionUser));
-    setUser(sessionUser);
-    return { success: true };
   }, []);
 
   // Logout handler
   const logout = useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(STORAGE_KEY);
     setUser(null);
     router.push("/signin");
