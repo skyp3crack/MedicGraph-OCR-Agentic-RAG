@@ -10,7 +10,14 @@ import re
 import logging
 from typing import TypedDict, Optional, Dict, Any, Union
 from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.sqlite import SqliteSaver
+import sqlite3
+
+# --- Runtime Patch for LangGraph Checkpointer Serializer bug ---
+from langgraph.checkpoint.serde.base import SerializerCompat
+SerializerCompat.dumps = lambda self, obj: self.serde.dumps(obj)
+SerializerCompat.loads = lambda self, data: self.serde.loads(data)
+
 
 from app.Services.ocr_service import extract_text_from_pdf
 from app.Services.extraction_service import ExtractionService
@@ -271,11 +278,18 @@ workflow.add_conditional_edges("human_review", route_after_review, {
 })
 workflow.add_edge("finalize", END)
 
-# Set up in-memory checkpointer to persist thread history
-memory_checkpointer = MemorySaver()
+# Set up SQLite checkpointer to persist graph execution thread states
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_DIR = os.path.join(BASE_DIR, "data")
+os.makedirs(DB_DIR, exist_ok=True)
+CHECKPOINTS_DB_PATH = os.path.join(DB_DIR, "medicograph_checkpoints.db")
+
+checkpoints_conn = sqlite3.connect(CHECKPOINTS_DB_PATH, check_same_thread=False)
+sqlite_checkpointer = SqliteSaver(checkpoints_conn)
+sqlite_checkpointer.setup()
 
 # Compile graph with interrupt right before clinician review
 clinical_graph = workflow.compile(
-    checkpointer=memory_checkpointer,
+    checkpointer=sqlite_checkpointer,
     interrupt_before=["human_review"]
 )
