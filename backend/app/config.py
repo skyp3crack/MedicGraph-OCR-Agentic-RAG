@@ -23,6 +23,18 @@ class Settings(BaseSettings):
         description="Google Gemini API key for LLM inference"
     )
 
+    # --- Security ---
+    jwt_secret_key: str = Field(
+        default="medicograph_super_secret_key_123",
+        description="Secret key for signing JWT tokens. MUST be changed in production."
+    )
+
+    # --- Database ---
+    database_url: str = Field(
+        default="sqlite:///./data/medicograph.db",
+        description="SQLAlchemy database URL"
+    )
+
     # --- Model Configuration ---
     embedding_model: str = Field(
         default="models/gemini-embedding-001",
