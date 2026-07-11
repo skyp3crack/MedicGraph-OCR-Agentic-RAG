@@ -7,6 +7,8 @@ dist/
 build/
 .DS_Store
 
+.obsidian/
+
 # AI artifacts
 AGENTS.md
 .opencode/
