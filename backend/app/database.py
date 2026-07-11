@@ -1,22 +1,26 @@
-import os
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import sessionmaker
+import os
 
-# Ensure data directory exists
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_DIR = os.path.join(BASE_DIR, "data")
-os.makedirs(DB_DIR, exist_ok=True)
+from app.config import get_settings
 
-DB_PATH = os.path.join(DB_DIR, "medicograph.db")
-DATABASE_URL = f"sqlite:///{DB_PATH}"
+settings = get_settings()
+DATABASE_URL = settings.database_url
+
+# Ensure data directory exists for SQLite
+if DATABASE_URL.startswith("sqlite"):
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    db_dir = os.path.dirname(os.path.abspath(db_path))
+    os.makedirs(db_dir, exist_ok=True)
 
 engine = create_engine(
     DATABASE_URL, connect_args={"check_same_thread": False}
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 def get_db():
     """FastAPI database session dependency."""
