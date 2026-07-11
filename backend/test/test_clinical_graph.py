@@ -1,34 +1,33 @@
 """
-Integration Test for Phase 3: LangGraph Clinical State Graph.
-Verifies PDF parsing, clinical extraction, PHI scrubbing, vector indexing,
-human review interrupt, and finalization transitions.
+Integration Test for LangGraph Clinical State Graph.
+Requires GEMINI_API_KEY. Run with: pytest -m integration
 """
 
+import pytest
 import os
-import sys
 import uuid
 import logging
-from dotenv import load_dotenv
-
-# Adjust path to find the 'app' module in parent directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
-load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Skip entire module if no real API key is set
+pytestmark = pytest.mark.integration
+
 from app.Agents.clinical_graph import clinical_graph
 
 
-def run_state_graph_test():
+@pytest.mark.skipif(
+    os.environ.get("GEMINI_API_KEY", "test_mock_key") == "test_mock_key",
+    reason="Requires real GEMINI_API_KEY for LLM calls"
+)
+def test_full_clinical_pipeline():
     # 1. Define document details
     pdf_file_name = "1.FORMAT-LAPORAN-PERUBATAN-1-2024-9-MOCK1.pdf"
     pdf_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", pdf_file_name))
     
     if not os.path.exists(pdf_path):
-        logger.error(f"Test PDF does not exist at {pdf_path}")
-        return False
+        pytest.fail(f"Test PDF does not exist at {pdf_path}")
 
     document_id = str(uuid.uuid4())
     logger.info(f"Starting LangGraph test run for document: {document_id}")
@@ -53,8 +52,7 @@ def run_state_graph_test():
     # 3. Verify the state at the interrupt
     state = clinical_graph.get_state(config)
     if not state or not state.values:
-        logger.error("Failed to retrieve state after invoke!")
-        return False
+        pytest.fail("Failed to retrieve state after invoke!")
 
     state_values = state.values
     logger.info(f"Graph execution paused. Current Status: {state_values.get('status')}")
@@ -93,18 +91,10 @@ def run_state_graph_test():
     # 5. Verify finalized state
     final_state = clinical_graph.get_state(config)
     if not final_state or not final_state.values:
-        logger.error("Failed to retrieve state after resuming!")
-        return False
+        pytest.fail("Failed to retrieve state after resuming!")
 
     final_values = final_state.values
     logger.info(f"Final Graph Status: {final_values.get('status')}")
     assert final_values.get("status") == "approved", f"Expected approved, got {final_values.get('status')}"
 
     logger.info("LangGraph state machine test completed: SUCCESS")
-    return True
-
-
-if __name__ == "__main__":
-    success = run_state_graph_test()
-    if not success:
-        os._exit(1)
