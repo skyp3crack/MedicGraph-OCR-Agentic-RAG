@@ -14,7 +14,12 @@ from app.models.models import User
 
 logger = logging.getLogger(__name__)
 
-SECRET_KEY = "medicograph_super_secret_key_123"  # Standard local fallback
+from app.config import get_settings
+
+def _get_secret_key() -> str:
+    """Fetch JWT secret from centralized settings."""
+    return get_settings().jwt_secret_key
+
 ALGORITHM = "HS256"
 
 security = HTTPBearer()
@@ -37,8 +42,10 @@ def base64url_decode(data: str) -> bytes:
     padding = '=' * (4 - (len(data) % 4))
     return base64.urlsafe_b64decode(data + padding)
 
-def encode_jwt(payload: dict, secret: str = SECRET_KEY, expires_in_seconds: int = 86400) -> str:
+def encode_jwt(payload: dict, secret: str | None = None, expires_in_seconds: int = 86400) -> str:
     """Generate a standard HS256 JWT token."""
+    if secret is None:
+        secret = _get_secret_key()
     header = {"alg": ALGORITHM, "typ": "JWT"}
     
     # Inject expiration
@@ -53,8 +60,10 @@ def encode_jwt(payload: dict, secret: str = SECRET_KEY, expires_in_seconds: int 
     signature_b64 = base64url_encode(signature)
     return f"{header_b64}.{payload_b64}.{signature_b64}"
 
-def decode_jwt(token: str, secret: str = SECRET_KEY) -> dict:
+def decode_jwt(token: str, secret: str | None = None) -> dict:
     """Decode and verify a standard HS256 JWT token."""
+    if secret is None:
+        secret = _get_secret_key()
     try:
         parts = token.split('.')
         if len(parts) != 3:
