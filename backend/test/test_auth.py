@@ -43,10 +43,10 @@ def test_jwt_invalid_signature_rejected():
 
 
 def test_signup_and_signin(client, test_db):
-    """Test full signup → signin flow via API."""
+    """Test full signup → signin flow via API with secure password."""
     signup_payload = {
         "email": "newdoctor@medicograph.dev",
-        "password": "clinician_secure_pass_123",
+        "password": "Clinician_secure_pass_123",
         "name": "Dr. New Clinician"
     }
     response = client.post("/api/auth/signup", json=signup_payload)
@@ -58,23 +58,62 @@ def test_signup_and_signin(client, test_db):
     # Signin with correct password
     signin_payload = {
         "email": "newdoctor@medicograph.dev",
-        "password": "clinician_secure_pass_123"
+        "password": "Clinician_secure_pass_123"
     }
     response = client.post("/api/auth/signin", json=signin_payload)
     assert response.status_code == 200
-    assert "access_token" in data
+    data_signin = response.json()
+    assert "access_token" in data_signin
 
 
 def test_signin_wrong_password(client, test_db):
     """Verify wrong password returns 401."""
-    # Create user first
-    client.post("/api/auth/signup", json={
-        "email": "doc@test.dev", "password": "correct_pass", "name": "Dr. Test"
+    # Create user first with valid password
+    signup_resp = client.post("/api/auth/signup", json={
+        "email": "doc@test.dev", "password": "Correct_pass123", "name": "Dr. Test"
     })
+    assert signup_resp.status_code == 200
     response = client.post("/api/auth/signin", json={
-        "email": "doc@test.dev", "password": "wrong_password"
+        "email": "doc@test.dev", "password": "Wrong_password123"
     })
     assert response.status_code == 401
+
+
+def test_signup_validation_errors(client, test_db):
+    """Verify weak passwords and invalid emails are rejected with 422."""
+    # Password too short
+    response = client.post("/api/auth/signup", json={
+        "email": "doc1@test.dev", "password": "Short1", "name": "Dr. Test"
+    })
+    assert response.status_code == 422
+
+    # Password no uppercase
+    response = client.post("/api/auth/signup", json={
+        "email": "doc2@test.dev", "password": "nouppercase123", "name": "Dr. Test"
+    })
+    assert response.status_code == 422
+
+    # Password no digit
+    response = client.post("/api/auth/signup", json={
+        "email": "doc3@test.dev", "password": "NoDigitPassword", "name": "Dr. Test"
+    })
+    assert response.status_code == 422
+
+    # Invalid email format
+    response = client.post("/api/auth/signup", json={
+        "email": "invalidemail", "password": "ValidPassword123", "name": "Dr. Test"
+    })
+    assert response.status_code == 422
+
+
+def test_token_refresh(auth_client):
+    """Verify token refresh endpoint."""
+    client, token, user = auth_client
+    response = client.post("/api/auth/refresh")
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["user"]["email"] == user["email"]
 
 
 def test_protected_endpoint_without_token(client, test_db):
@@ -90,3 +129,24 @@ def test_protected_endpoint_with_token(auth_client):
     assert response.status_code == 200
     logs = response.json()
     assert isinstance(logs, list)
+
+
+def test_rbac_denies_non_clinician(client, test_db):
+    """Verify that a user without clinician/admin role is denied access."""
+    # Create user with role "patient" directly in DB
+    from app.models.models import User
+    from app.utils.auth_utils import hash_password, encode_jwt
+    user = User(
+        email="patient@test.dev",
+        name="Patient Test",
+        hashed_password=hash_password("PatientPass123"),
+        role="patient",
+    )
+    test_db.add(user)
+    test_db.commit()
+
+    token = encode_jwt({"sub": user.email, "role": user.role})
+    response = client.get("/api/audit/logs", headers={"Authorization": f"Bearer {token}"})
+    assert response.status_code == 403
+    assert "Access denied" in response.json()["detail"]
+

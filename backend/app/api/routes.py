@@ -12,9 +12,11 @@ import uuid
 import shutil
 import logging
 import json
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends
-from pydantic import BaseModel
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends, Request
+from pydantic import BaseModel,EmailStr, field_validator
 from sqlalchemy.orm import Session
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.schemas.requests import QueryRequest
 from app.schemas.responses import UploadResponse, QueryResponse, HealthResponse
@@ -27,24 +29,39 @@ from app.Agents.clinical_graph import clinical_graph
 # Database and Security integrations
 from app.database import get_db
 from app.models.models import User, AuditLog
-from app.utils.auth_utils import get_current_user, hash_password, verify_password, encode_jwt
+from app.utils.auth_utils import get_current_user, hash_password, verify_password, encode_jwt, require_role
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["MedicGraph RAG"])
 
+limiter = Limiter(key_func=get_remote_address)
 
 # --- Authentication Schemas ---
 
 class SignupRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
     name: str
 
 
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("Password must be at least 8 characters long.")
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter.")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit.")
+        return v
+
+
 class SigninRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
+
+
 
 
 # --- Authentication Endpoints ---
@@ -85,10 +102,11 @@ async def signup(request: SignupRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/auth/signin")
-async def signin(request: SigninRequest, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+async def signin(request: Request, signin_data: SigninRequest, db: Session = Depends(get_db)):
     """Authenticate and sign in a clinician."""
-    user = db.query(User).filter(User.email == request.email.lower().strip()).first()
-    if not user or not verify_password(request.password, user.hashed_password):
+    user = db.query(User).filter(User.email == signin_data.email.lower().strip()).first()
+    if not user or not verify_password(signin_data.password, user.hashed_password):
         raise HTTPException(
             status_code=401,
             detail="Invalid email or password. Please try again."
@@ -103,6 +121,20 @@ async def signin(request: SigninRequest, db: Session = Depends(get_db)):
             "email": user.email,
             "name": user.name,
             "role": user.role
+        }
+    }
+
+@router.post("/auth/refresh")
+async def refresh_token(current_user: User = Depends(get_current_user)):
+    """Issue a new JWT token from a valid, non-expired token."""
+    new_token = encode_jwt({"sub": current_user.email})
+    return {
+        "access_token": new_token,
+        "token_type": "bearer",
+        "user": {
+            "email": current_user.email,
+            "name": current_user.name,
+            "role": current_user.role
         }
     }
 
@@ -392,7 +424,7 @@ async def get_document_status(document_id: str, current_user: User = Depends(get
 
 @router.get("/audit/logs")
 async def get_audit_logs(
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_role("clinician", "admin")),
     db: Session = Depends(get_db)
 ):
     """Retrieve historical clinician audit action logs (strictly de-identified)."""

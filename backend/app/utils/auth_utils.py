@@ -111,3 +111,21 @@ def get_current_user(
             detail="User not found"
         )
     return user
+
+def require_role(*allowed_roles: str):
+    """
+    FastAPI dependency factory that enforces role-based access control.
+
+    Usage:
+        @router.get("/admin-only")
+        async def admin_endpoint(user: User = Depends(require_role("admin"))):
+            ...
+    """
+    def role_checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied. Required role(s): {', '.join(allowed_roles)}. Your role: {current_user.role}"
+            )
+        return current_user
+    return role_checker
