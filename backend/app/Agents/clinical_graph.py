@@ -81,6 +81,20 @@ def clean_phi(text: str, name: str, ic_number: str) -> str:
     text = re.sub(r"\bMRN-\d{7,10}\b", "[MRN]", text)
     text = re.sub(r"\bREG-FULL-\d{4}-\d{4}\b", "[REGISTRATION_NO]", text)
 
+# 7. Clean Malaysian addresses (Jalan, Lorong, Taman, etc.)
+    text = re.sub(
+        r"\b(?:No\.?\s*\d+[A-Za-z]?,?\s*)?(?:Jalan|Lorong|Taman|Kampung|Persiaran|Lebuh)\s+[A-Za-z0-9\s/,.-]{3,50}",
+        "[ADDRESS]",
+        text,
+        flags=re.IGNORECASE
+    )
+
+    # 8. Clean Malaysian postal codes (5 digits, usually 01000–99999)
+    text = re.sub(r"\b\d{5}\s+(?:Kuala Lumpur|Selangor|Johor|Penang|Perak|Sabah|Sarawak|Melaka|Kedah|Kelantan|Pahang|Terengganu|Perlis|Negeri Sembilan|Putrajaya|Labuan)\b", "[POSTAL_ADDRESS]", text, flags=re.IGNORECASE)
+
+    # 9. Clean old-format IC numbers (6-digit, pre-2000 Malaysian)
+    text = re.sub(r"\b[A-Z]\d{6}\b", "[OLD_IC_NUMBER]", text)
+    
     return text
 
 

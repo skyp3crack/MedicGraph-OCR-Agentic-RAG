@@ -101,3 +101,31 @@ class TestCleanPhiMrn:
         result = clean_phi(text, name="", ic_number="")
         assert "REG-FULL-2024-0001" not in result
         assert "[REGISTRATION_NO]" in result
+
+
+class TestCleanPhiAddressAndOldIc:
+    """Test address and old NRIC de-identification."""
+
+    def test_malaysian_address(self):
+        text = "Patient lives at No. 12, Jalan Ampang, Kuala Lumpur."
+        result = clean_phi(text, name="", ic_number="")
+        assert "Jalan Ampang" not in result
+        assert "[ADDRESS]" in result
+
+        text2 = "Address: Persiaran Dutamas, Taman Tun Dr Ismail"
+        result2 = clean_phi(text2, name="", ic_number="")
+        assert "Persiaran Dutamas" not in result2
+        assert "[ADDRESS]" in result2
+
+    def test_postal_code(self):
+        text = "Postal Code is 50450 Kuala Lumpur"
+        result = clean_phi(text, name="", ic_number="")
+        assert "50450 Kuala Lumpur" not in result
+        assert "[POSTAL_ADDRESS]" in result
+
+    def test_old_ic_number(self):
+        text = "Old NRIC: A123456"
+        result = clean_phi(text, name="", ic_number="")
+        assert "A123456" not in result
+        assert "[OLD_IC_NUMBER]" in result
+
