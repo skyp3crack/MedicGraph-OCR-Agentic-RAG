@@ -6,6 +6,7 @@ Supports both selectable-text PDFs (via pypdf) and scanned PDFs (via pytesseract
 """
 
 import logging
+
 from pypdf import PdfReader
 
 logger = logging.getLogger(__name__)

@@ -1,5 +1,7 @@
-from typing import List,Optional
-from pydantic import BaseModel, Field #for type hinting and validation
+from typing import List, Optional
+
+from pydantic import BaseModel, Field  #for type hinting and validation
+
 
 #EXTRACTION AGENT SCHEMAS (Clinical Structuring via MyHDD)
 class VitalSigns(BaseModel):
@@ -22,7 +24,7 @@ class MedicalRecordPayload(BaseModel):
     original_document: str = Field(..., description="Clean copy of the source markdown post-PHI redaction.")
     patient_assessment: PatientAssessment = Field(..., description="MyHDD structured assessment block.")
     working_diagnoses: WorkingDiagnosesMyHDD = Field(..., description="MyHDD categorical taxonomy diagnosis matrix.")
-    management_plan: List[str] = Field(default_factory=list, description="List of therapeutic interventions or diagnostic testing planned.")   
+    management_plan: List[str] = Field(default_factory=list, description="List of therapeutic interventions or diagnostic testing planned.")
 
 #Coding Agent Schemas (SMRP ICD-11 Mapping - PD301 Compliant)
 class ICD11CodingEntry(BaseModel):

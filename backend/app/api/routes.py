@@ -7,29 +7,30 @@ Endpoints:
     GET  /api/health  — Health check with service status
 """
 
-import os
-import uuid
-import shutil
-import logging
 import json
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks, Depends, Request
-from pydantic import BaseModel,EmailStr, field_validator
-from sqlalchemy.orm import Session
+import logging
+import os
+import shutil
+import uuid
+
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Request, UploadFile
+from pydantic import BaseModel, EmailStr, field_validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from sqlalchemy.orm import Session
 
-from app.schemas.requests import QueryRequest
-from app.schemas.responses import UploadResponse, QueryResponse, HealthResponse
-from app.schemas.kkm_schemas import ClinicalExtractionResponse
-from app.Services.rag_service import RAGService
-from app.Services.extraction_service import ExtractionService
-from app.config import get_settings
 from app.Agents.clinical_graph import clinical_graph
+from app.config import get_settings
 
 # Database and Security integrations
 from app.database import get_db
-from app.models.models import User, AuditLog
-from app.utils.auth_utils import get_current_user, hash_password, verify_password, encode_jwt, require_role
+from app.models.models import AuditLog, User
+from app.schemas.kkm_schemas import ClinicalExtractionResponse
+from app.schemas.requests import QueryRequest
+from app.schemas.responses import HealthResponse, QueryResponse, UploadResponse
+from app.Services.extraction_service import ExtractionService
+from app.Services.rag_service import RAGService
+from app.utils.auth_utils import encode_jwt, get_current_user, hash_password, require_role, verify_password
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +76,7 @@ async def signup(request: SignupRequest, db: Session = Depends(get_db)):
             status_code=400,
             detail="An account with this email already exists."
         )
-    
+
     # Create new clinician user
     hashed_pwd = hash_password(request.password)
     user = User(
@@ -87,7 +88,7 @@ async def signup(request: SignupRequest, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    
+
     # Generate JWT
     token = encode_jwt({"sub": user.email})
     return {
@@ -111,7 +112,7 @@ async def signin(request: Request, signin_data: SigninRequest, db: Session = Dep
             status_code=401,
             detail="Invalid email or password. Please try again."
         )
-    
+
     # Generate JWT
     token = encode_jwt({"sub": user.email})
     return {
@@ -208,7 +209,7 @@ async def upload_pdf(
 
     document_id = str(uuid.uuid4())
     file_path = os.path.join(upload_dir, f"{document_id}_{file.filename}")
-    
+
     # Save uploaded file to disk
     try:
         with open(file_path, "wb") as buffer:
@@ -273,18 +274,18 @@ async def extract_clinical_data(request: QueryRequest, current_user: User = Depe
     """
     try:
         config = {"configurable": {"thread_id": request.document_id}}
-        
+
         # Retrieve graph state
         state = clinical_graph.get_state(config)
         if not state or not state.values:
             raise HTTPException(status_code=404, detail=f"No active session for document {request.document_id}")
-            
+
         state_values = state.values
         extraction = state_values.get("extraction")
         if not extraction:
             err = state_values.get("error_message") or "Extraction data is missing"
             raise HTTPException(status_code=500, detail=f"Clinical data extraction failed: {err}")
-            
+
         # Fill in the document_id in the response
         extraction_response = dict(extraction)
         extraction_response["document_id"] = request.document_id
@@ -315,21 +316,21 @@ async def audit_action(
     """
     try:
         config = {"configurable": {"thread_id": request.document_id}}
-        
+
         # Check current state
         state = clinical_graph.get_state(config)
         if not state or not state.values:
             raise HTTPException(status_code=404, detail=f"No active session for document {request.document_id}")
-            
+
         update_data = {
             "audit_action": request.action
         }
-        
+
         edited_fields = []
         if request.payload:
             # Save any edits made by clinician on the dashboard back into state graph
             extraction = dict(state.values.get("extraction", {}))
-            
+
             if "demographics" in request.payload:
                 demo = request.payload["demographics"]
                 extraction["demographics"] = {
@@ -361,23 +362,23 @@ async def audit_action(
                 ]
                 edited_fields.append("other_diagnoses")
             update_data["extraction"] = extraction
-            
+
         # Update thread state
         clinical_graph.update_state(config, update_data)
-        
+
         # Resume workflow (invoke with None tells graph to proceed past interrupt)
         clinical_graph.invoke(None, config)
-        
+
         final_state = clinical_graph.get_state(config)
         final_status = final_state.values.get("status", "review_pending") if final_state else "completed"
-        
+
         # Record de-identified audit log (never logs PHI raw values)
         log_payload = {
             "edited_fields": edited_fields,
             "has_payload": request.payload is not None,
             "action": request.action
         }
-        
+
         new_log = AuditLog(
             document_id=request.document_id,
             clinician_email=current_user.email,
@@ -386,7 +387,7 @@ async def audit_action(
         )
         db.add(new_log)
         db.commit()
-        
+
         return {
             "status": "success",
             "message": f"Action '{request.action}' processed. Status is now {final_status}."
@@ -408,7 +409,7 @@ async def get_document_status(document_id: str, current_user: User = Depends(get
         state = clinical_graph.get_state(config)
         if not state or not state.values:
             raise HTTPException(status_code=404, detail=f"No active session for document {document_id}")
-            
+
         state_values = state.values
         return {
             "document_id": document_id,

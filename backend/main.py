@@ -10,15 +10,14 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
-from app.config import get_settings
 from app.api.routes import router as api_router
+from app.config import get_settings
 
-limiter = Limiter(key_func=get_remote_address) 
+limiter = Limiter(key_func=get_remote_address)
 
 # --- Logging Configuration ---
 logging.basicConfig(
@@ -43,14 +42,14 @@ async def lifespan(app: FastAPI):
     logger.info("=" * 60)
 
     # Initialize SQLite database and create tables
-    from app.database import engine, Base, SessionLocal
     import app.models
+    from app.database import Base, SessionLocal, engine
     from app.models.models import User
     from app.utils.auth_utils import hash_password
     try:
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables initialized successfully.")
-        
+
         # Seed default clinician admin user
         db = SessionLocal()
         try:
@@ -71,7 +70,7 @@ async def lifespan(app: FastAPI):
             logger.error(f"Failed to seed admin clinician: {db_err}")
         finally:
             db.close()
-            
+
     except Exception as e:
         logger.error(f"Failed to initialize database tables: {e}")
 

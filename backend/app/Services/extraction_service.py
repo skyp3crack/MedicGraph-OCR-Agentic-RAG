@@ -10,11 +10,12 @@ Pydantic validation instead.
 import json
 import logging
 import re
-from langchain_google_genai import ChatGoogleGenerativeAI
+
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.config import get_settings
-from app.schemas.kkm_schemas import PatientDemographics, DiagnosisEntry
+from app.schemas.kkm_schemas import DiagnosisEntry, PatientDemographics
 
 logger = logging.getLogger(__name__)
 

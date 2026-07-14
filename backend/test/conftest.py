@@ -9,6 +9,7 @@ Provides:
 
 import os
 import sys
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -23,7 +24,7 @@ os.environ.setdefault("GEMINI_API_KEY", "test_mock_key")
 
 from app.database import Base, get_db
 from app.models.models import User
-from app.utils.auth_utils import hash_password, encode_jwt
+from app.utils.auth_utils import encode_jwt, hash_password
 from main import app
 
 

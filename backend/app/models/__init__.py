@@ -1,1 +1,1 @@
-from .models import User, AuditLog
+from .models import AuditLog, User

@@ -3,9 +3,10 @@ Unit tests for PHI (Protected Health Information) scrubbing logic.
 Tests the clean_phi() function from the clinical graph module.
 """
 
-import pytest
-import sys
 import os
+import sys
+
+import pytest
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from app.Agents.clinical_graph import clean_phi

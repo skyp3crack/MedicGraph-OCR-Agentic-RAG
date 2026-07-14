@@ -1,6 +1,9 @@
 import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Text, func
+
+from sqlalchemy import Column, DateTime, Integer, String, Text, func
+
 from app.database import Base
+
 
 class User(Base):
     """Database model representing a registered clinician/user."""
@@ -24,4 +27,4 @@ class AuditLog(Base):
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     # Stores metadata of changes (e.g. fields modified, count of diagnoses)
     # This must NEVER contain raw patient text, IC number, or name to prevent PHI leaks.
-    payload = Column(Text, nullable=True) 
+    payload = Column(Text, nullable=True)

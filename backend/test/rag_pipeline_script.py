@@ -1,15 +1,17 @@
 
 # rag_pipeline_test.py
 # --- Imports ---
-from pypdf import PdfReader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, GoogleGenerativeAI # Corrected imports
-from langchain_community.vectorstores import Chroma
+import os
+
+from dotenv import load_dotenv
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_community.vectorstores import Chroma
 from langchain_core.prompts import ChatPromptTemplate
-import os
-from dotenv import load_dotenv
+from langchain_google_genai import GoogleGenerativeAI, GoogleGenerativeAIEmbeddings  # Corrected imports
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pypdf import PdfReader
+
 load_dotenv() # This loads the variables from .env into os.environ
 
 

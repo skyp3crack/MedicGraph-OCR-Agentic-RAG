@@ -5,22 +5,23 @@ Processes PDF through:
 OCR -> Clinical Extraction -> PHI Scrubbing -> Vector Indexing -> Human Review pause.
 """
 
+import logging
 import os
 import re
-import logging
-from typing import TypedDict, Optional, Dict, Any, Union
-from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.sqlite import SqliteSaver
 import sqlite3
+from typing import Any, Dict, Optional, TypedDict, Union
 
 # --- Runtime Patch for LangGraph Checkpointer Serializer bug ---
 from langgraph.checkpoint.serde.base import SerializerCompat
+from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.graph import END, START, StateGraph
+
 SerializerCompat.dumps = lambda self, obj: self.serde.dumps(obj)
 SerializerCompat.loads = lambda self, data: self.serde.loads(data)
 
 
-from app.Services.ocr_service import extract_text_from_pdf
 from app.Services.extraction_service import ExtractionService
+from app.Services.ocr_service import extract_text_from_pdf
 from app.Services.rag_service import RAGService
 
 logger = logging.getLogger(__name__)
@@ -47,11 +48,11 @@ def clean_phi(text: str, name: str, ic_number: str) -> str:
         # Sort parts descending so longer parts match first (e.g. "Ahmad Bin Hassan" before "Ahmad")
         parts = [p.strip() for p in name.split() if p.strip()]
         parts.sort(key=len, reverse=True)
-        
+
         # Replace full name
         escaped_name = re.escape(name)
         text = re.sub(rf"\b{escaped_name}\b", "[PATIENT_NAME]", text, flags=re.IGNORECASE)
-        
+
         # Replace individual name parts
         for part in parts:
             if len(part) > 2 and part.upper() not in ["BIN", "BINTI", "A/L", "A/P", "DEVI", "AL"]:
@@ -94,7 +95,7 @@ def clean_phi(text: str, name: str, ic_number: str) -> str:
 
     # 9. Clean old-format IC numbers (6-digit, pre-2000 Malaysian)
     text = re.sub(r"\b[A-Z]\d{6}\b", "[OLD_IC_NUMBER]", text)
-    
+
     return text
 
 
@@ -152,10 +153,10 @@ def scrub_phi_node(state: ClinicalGraphState) -> Dict[str, Any]:
     raw_text = state.get("raw_text")
     extraction = state.get("extraction", {})
     demographics = extraction.get("demographics", {})
-    
+
     name = demographics.get("name", "")
     ic_number = demographics.get("ic_number", "")
-    
+
     try:
         scrubbed_text = clean_phi(raw_text, name, ic_number)
         return {
@@ -177,7 +178,7 @@ def index_document_node(state: ClinicalGraphState) -> Dict[str, Any]:
     document_id = state.get("document_id")
     scrubbed_text = state.get("scrubbed_text")
     pdf_path = state.get("pdf_path")
-    
+
     try:
         from app.api.routes import get_rag_service
         rag_service = get_rag_service()

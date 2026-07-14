@@ -1,12 +1,13 @@
 import base64
-import json
-import hmac
 import hashlib
-import time
-import bcrypt
+import hmac
+import json
 import logging
+import time
+
+import bcrypt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -15,6 +16,7 @@ from app.models.models import User
 logger = logging.getLogger(__name__)
 
 from app.config import get_settings
+
 
 def _get_secret_key() -> str:
     """Fetch JWT secret from centralized settings."""
@@ -47,15 +49,15 @@ def encode_jwt(payload: dict, secret: str | None = None, expires_in_seconds: int
     if secret is None:
         secret = _get_secret_key()
     header = {"alg": ALGORITHM, "typ": "JWT"}
-    
+
     # Inject expiration
     if "exp" not in payload:
         payload["exp"] = int(time.time()) + expires_in_seconds
-        
+
     header_b64 = base64url_encode(json.dumps(header).encode('utf-8'))
     payload_b64 = base64url_encode(json.dumps(payload).encode('utf-8'))
     message = f"{header_b64}.{payload_b64}".encode('utf-8')
-    
+
     signature = hmac.new(secret.encode('utf-8'), message, hashlib.sha256).digest()
     signature_b64 = base64url_encode(signature)
     return f"{header_b64}.{payload_b64}.{signature_b64}"
@@ -68,18 +70,18 @@ def decode_jwt(token: str, secret: str | None = None) -> dict:
         parts = token.split('.')
         if len(parts) != 3:
             raise ValueError("Invalid token format")
-            
+
         header_b64, payload_b64, signature_b64 = parts
         message = f"{header_b64}.{payload_b64}".encode('utf-8')
-        
+
         expected_signature = hmac.new(secret.encode('utf-8'), message, hashlib.sha256).digest()
         if not hmac.compare_digest(base64url_decode(signature_b64), expected_signature):
             raise ValueError("Signature verification failed")
-            
+
         payload = json.loads(base64url_decode(payload_b64).decode('utf-8'))
         if "exp" in payload and payload["exp"] < time.time():
             raise ValueError("Token expired")
-            
+
         return payload
     except Exception as e:
         raise ValueError(f"Invalid token: {e}")
@@ -103,7 +105,7 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Authentication failed: {str(e)}"
         )
-        
+
     user = db.query(User).filter(User.email == email).first()
     if user is None:
         raise HTTPException(

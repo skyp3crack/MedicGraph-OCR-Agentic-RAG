@@ -5,24 +5,25 @@ Wires together OCR extraction, text chunking, vector embedding, similarity
 retrieval, and LLM generation into a cohesive service for medical report Q&A.
 """
 
+import logging
 import os
 import uuid
-import logging
 from typing import Any, cast
-from langchain_google_genai import GoogleGenerativeAI
+
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_community.vectorstores import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_google_genai import GoogleGenerativeAI
 
 from app.config import get_settings
-from app.Services.ocr_service import extract_text_from_pdf
 from app.Services.embedding_service import (
     create_text_chunks,
-    get_embeddings_model,
     create_vector_store,
+    get_embeddings_model,
     load_vector_store,
 )
+from app.Services.ocr_service import extract_text_from_pdf
 
 logger = logging.getLogger(__name__)
 

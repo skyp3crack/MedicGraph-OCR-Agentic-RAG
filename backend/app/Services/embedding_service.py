@@ -6,10 +6,11 @@ API (routed through OpenRouter), and persisting vectors in ChromaDB.
 """
 
 import logging
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logger = logging.getLogger(__name__)
 

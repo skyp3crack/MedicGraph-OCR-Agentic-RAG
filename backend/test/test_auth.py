@@ -2,7 +2,7 @@
 Pytest tests for Authentication, Authorization, and JWT Security.
 """
 
-from app.utils.auth_utils import hash_password, verify_password, encode_jwt, decode_jwt
+from app.utils.auth_utils import decode_jwt, encode_jwt, hash_password, verify_password
 
 
 def test_password_hashing():
@@ -135,7 +135,7 @@ def test_rbac_denies_non_clinician(client, test_db):
     """Verify that a user without clinician/admin role is denied access."""
     # Create user with role "patient" directly in DB
     from app.models.models import User
-    from app.utils.auth_utils import hash_password, encode_jwt
+    from app.utils.auth_utils import encode_jwt, hash_password
     user = User(
         email="patient@test.dev",
         name="Patient Test",

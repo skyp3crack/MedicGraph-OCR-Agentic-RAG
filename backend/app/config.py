@@ -5,9 +5,10 @@ Loads environment variables from .env and validates required API keys at startup
 Single source of truth for all configuration values across the application.
 """
 
-from pydantic_settings import BaseSettings
-from pydantic import Field
 from functools import lru_cache
+
+from pydantic import Field
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
