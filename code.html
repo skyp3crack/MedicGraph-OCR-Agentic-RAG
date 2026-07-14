@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MedicGraph | Clinical Validation Workbench</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Config Verbatim -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary": "#0051d5",
+                    "surface-tint": "#006c4a",
+                    "background": "#faf8ff",
+                    "error-container": "#ffdad6",
+                    "primary-fixed": "#85f8c4",
+                    "surface-dim": "#d2d9f4",
+                    "primary-container": "#00855d",
+                    "surface-container-lowest": "#ffffff",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed-dim": "#68dba9",
+                    "on-surface-variant": "#3d4a42",
+                    "on-secondary-fixed-variant": "#005049",
+                    "surface-container-highest": "#dae2fd",
+                    "outline": "#6d7a72",
+                    "error": "#ba1a1a",
+                    "tertiary-fixed-dim": "#b4c5ff",
+                    "surface-container-low": "#f2f3ff",
+                    "on-background": "#131b2e",
+                    "on-primary-container": "#f5fff7",
+                    "surface": "#faf8ff",
+                    "on-tertiary-fixed-variant": "#003ea8",
+                    "tertiary-fixed": "#dbe1ff",
+                    "on-primary": "#ffffff",
+                    "on-secondary-container": "#006f66",
+                    "on-primary-fixed": "#002114",
+                    "surface-variant": "#dae2fd",
+                    "surface-container-high": "#e2e7ff",
+                    "inverse-surface": "#283044",
+                    "on-primary-fixed-variant": "#005137",
+                    "on-secondary-fixed": "#00201d",
+                    "secondary-fixed": "#89f5e7",
+                    "on-error": "#ffffff",
+                    "secondary-container": "#86f2e4",
+                    "inverse-on-surface": "#eef0ff",
+                    "secondary": "#006a61",
+                    "on-error-container": "#93000a",
+                    "primary": "#006948",
+                    "surface-bright": "#faf8ff",
+                    "on-tertiary-container": "#fefcff",
+                    "inverse-primary": "#68dba9",
+                    "on-surface": "#131b2e",
+                    "on-tertiary-fixed": "#00174b",
+                    "surface-container": "#eaedff",
+                    "tertiary-container": "#316bf3",
+                    "outline-variant": "#bccac0",
+                    "on-tertiary": "#ffffff",
+                    "secondary-fixed-dim": "#6bd8cb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "margin_edge": "1.5rem",
+                    "sidebar_width": "260px",
+                    "gutter": "1rem",
+                    "compact_padding": "0.75rem",
+                    "base_padding": "1rem"
+            },
+            "fontFamily": {
+                    "code-icd": ["JetBrains Mono"],
+                    "data-tabular": ["JetBrains Mono"],
+                    "display-lg": ["Inter"],
+                    "title-sm": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-caps": ["Inter"]
+            },
+            "fontSize": {
+                    "code-icd": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                    "data-tabular": ["13px", {"lineHeight": "18px", "fontWeight": "450"}],
+                    "display-lg": ["30px", {"lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "title-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #faf8ff; color: #131b2e; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .pulse-active { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+    </style>
+</head>
+<body class="h-screen w-full overflow-hidden flex flex-row">
+<!-- PRIMARY LEFT SIDEBAR (The Anchor) -->
+<aside class="fixed h-full w-[260px] left-0 top-0 bg-inverse-surface flex flex-col z-50 transition-colors duration-200 shadow-sm">
+<div class="px-6 py-8 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">clinical_notes</span>
+</div>
+<div class="flex flex-col">
+<h1 class="font-headline-md text-headline-md font-bold text-primary-fixed leading-none">MedicoAgenticAI</h1>
+<span class="text-[10px] text-surface-variant/70 uppercase tracking-widest font-bold mt-1">MedicGraph Intelligence</span>
+</div>
+</div>
+<nav class="flex-1 overflow-y-auto px-4 space-y-1 scrollbar-hide">
+<div class="text-[10px] text-surface-variant font-bold uppercase tracking-widest px-2 mb-2">Agentic Pipelines</div>
+<a class="text-primary-fixed-dim font-bold border-l-4 border-primary-fixed pl-4 flex items-center gap-3 py-3 hover:bg-surface-variant/10 transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">map_pin_review</span>
+<span class="font-body-md text-body-md">Pipeline Overview</span>
+</a>
+<a class="text-surface-variant flex items-center gap-3 px-6 py-3 hover:bg-surface-variant/10 hover:text-primary-fixed-dim transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">batch_prediction</span>
+<span class="font-body-md text-body-md">Active Batches</span>
+</a>
+<a class="text-surface-variant flex items-center gap-3 px-6 py-3 hover:bg-surface-variant/10 hover:text-primary-fixed-dim transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">rule_settings</span>
+<span class="font-body-md text-body-md">Validation Tasks</span>
+<span class="ml-auto bg-primary-container text-on-primary-container px-1.5 py-0.5 rounded text-[10px]">12</span>
+</a>
+<a class="text-surface-variant flex items-center gap-3 px-6 py-3 hover:bg-surface-variant/10 hover:text-primary-fixed-dim transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md text-body-md">System Health</span>
+</a>
+<a class="text-surface-variant flex items-center gap-3 px-6 py-3 hover:bg-surface-variant/10 hover:text-primary-fixed-dim transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</nav>
+<!-- ARIF Assistant Widget -->
+<div class="p-4 bg-surface-variant/5 border-t border-surface-variant/10">
+<div class="bg-primary/20 rounded-xl p-4 border border-primary-fixed/20">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<span class="text-primary-fixed-dim font-bold text-[12px]">ARIF Assistant</span>
+</div>
+<p class="text-on-surface-variant text-[11px] leading-relaxed">System ready for ICD-11 PD301 validation protocols.</p>
+</div>
+</div>
+<footer class="p-4 flex flex-col gap-2">
+<a class="text-surface-variant flex items-center gap-3 px-2 py-2 hover:underline text-[12px]" href="#">
+<span class="material-symbols-outlined text-[18px]">help</span>
+<span>Documentation</span>
+</a>
+<div class="text-on-surface-variant/40 text-[10px] px-2 font-label-caps">v4.2 Clinical Protocol</div>
+</footer>
+</aside>
+<!-- MAIN CONTENT AREA -->
+<main class="ml-[260px] flex-1 flex flex-row overflow-hidden h-screen">
+<!-- LEFT PANEL: DOCUMENT VIEWER (45%) -->
+<section class="w-[45%] bg-white border-r border-outline-variant flex flex-col h-full">
+<header class="flex items-center justify-between px-6 py-4 border-b border-outline-variant bg-surface-container-lowest">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-outline">description</span>
+<span class="font-title-sm text-title-sm truncate max-w-[200px]">1.FORMAT-LAPORAN-PERUBATAN-1-2024-9-MOCK1.pdf</span>
+</div>
+<div class="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-[11px] font-bold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                    Docling Layout-Aware
+                </div>
+</header>
+<div class="flex-1 overflow-y-auto p-8 scrollbar-hide bg-slate-50/50">
+<div class="bg-white p-10 shadow-sm border border-outline-variant min-h-full rounded-lg">
+<div class="space-y-6">
+<div class="flex justify-between items-start border-b pb-4">
+<div>
+<h2 class="font-bold text-slate-900 text-lg uppercase">Hospital Kuala Lumpur</h2>
+<p class="text-slate-500 text-sm">Discharge Summary &amp; Clinical Report</p>
+</div>
+<div class="text-right">
+<p class="text-slate-400 font-code-icd text-xs">REF: HKL-992384-2024</p>
+</div>
+</div>
+<div class="space-y-4 font-serif text-slate-800 leading-relaxed">
+<p><span class="font-bold">Patient History:</span> Patient presented with acute onset of shortness of breath and chest tightness since 48 hours ago. Vital signs on admission: BP 145/90, HR 102, SPO2 94% on room air.</p>
+<!-- AI Highlighted Block -->
+<div class="bg-surface-container-low border-l-4 border-tertiary p-4 rounded-r shadow-sm">
+<div class="flex items-center gap-2 mb-2 text-tertiary font-bold text-xs uppercase tracking-widest">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+                                    Agentic Mapping Context
+                                </div>
+<p class="text-tertiary font-medium">"Clinical observations indicate secondary hypertensive crisis associated with chronic renal failure symptoms. System mapping to ICD-11 code 5A11."</p>
+</div>
+<p><span class="font-bold">Procedures:</span> Urgent EKG performed showing ST-segment depression in V4-V6. Troponin I levels elevated at 0.45 ng/mL. Cardiology consult initiated immediately upon stabilization.</p>
+<p><span class="font-bold">Management:</span> Commenced on double anti-platelet therapy (Aspirin 300mg stat, Clopidogrel 300mg stat). Stabilized in Cardiac Care Unit (CCU) for 48 hours monitoring.</p>
+</div>
+<div class="mt-8 pt-8 border-t border-dashed border-slate-300">
+<div class="grid grid-cols-2 gap-8">
+<div>
+<h4 class="text-[10px] font-bold text-slate-400 uppercase mb-2">Physician in Charge</h4>
+<p class="font-bold text-slate-800">Dr. Amirul Hamzah</p>
+<p class="text-xs text-slate-500">Senior Consultant Cardiologist</p>
+</div>
+<div class="text-right">
+<h4 class="text-[10px] font-bold text-slate-400 uppercase mb-2">Validation Status</h4>
+<div class="flex items-center justify-end gap-2 text-primary font-bold">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+                                        SMRP Pending
+                                    </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- RIGHT PANEL: STRUCTURED HITL FORM (55%) -->
+<section class="w-[55%] bg-white flex flex-col h-full overflow-hidden">
+<!-- TopAppBar Context -->
+<div class="flex justify-between items-center w-full px-6 py-4 bg-surface border-b border-outline-variant">
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md font-bold text-primary">Validation Workbench</span>
+<span class="text-[10px] text-on-surface-variant font-medium">Batch #B-992-KKM-2024</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<button class="text-on-surface-variant hover:text-primary transition-transform active:scale-90">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-transform active:scale-90">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+<button class="bg-primary text-on-primary px-4 py-2 rounded font-title-sm text-title-sm hover:opacity-90 transition-transform active:scale-95 shadow-sm">
+                        Approve Batch
+                    </button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide">
+<!-- A. ACTIVE PROGRESS TRACKER (LangGraph) -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-title-sm text-title-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">hub</span>
+                            LangGraph Execution State
+                        </h3>
+<span class="text-[10px] font-bold text-primary uppercase bg-primary-fixed px-2 py-0.5 rounded">Real-time Node</span>
+</div>
+<div class="relative flex items-center justify-between">
+<div class="absolute h-0.5 bg-outline-variant w-full -z-10 top-5"></div>
+<!-- Step 1 -->
+<div class="flex flex-col items-center gap-2 bg-white">
+<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">Parsing Layout</span>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col items-center gap-2 bg-white">
+<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">Scrubbing PHI</span>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col items-center gap-2 bg-white">
+<div class="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+<span class="text-[10px] font-bold text-on-surface-variant">Data Extraction</span>
+</div>
+<!-- Step 4 (Active) -->
+<div class="flex flex-col items-center gap-2 bg-white">
+<div class="w-10 h-10 rounded-full bg-white border-2 border-primary text-primary flex items-center justify-center shadow-sm pulse-active">
+<span class="material-symbols-outlined text-sm">person_search</span>
+</div>
+<span class="text-[10px] font-bold text-primary">Human Verification</span>
+</div>
+</div>
+</section>
+<!-- B. PATIENT DEMOGRAPHICS -->
+<section class="space-y-3">
+<div class="flex items-center gap-2">
+<h3 class="font-title-sm text-title-sm text-on-surface">MyHDD Standard Ingestion Schema</h3>
+<span class="material-symbols-outlined text-slate-400 text-sm">info</span>
+</div>
+<div class="grid grid-cols-3 gap-3 bg-surface-container-low p-4 rounded-xl border border-outline-variant shadow-sm">
+<div class="space-y-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant/60">Patient Name</label>
+<input class="w-full bg-white border-outline-variant rounded p-2 text-sm font-bold focus:ring-primary focus:border-primary" type="text" value="AHMAD BIN ZULKIFLI"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant/60">ID Number (IC)</label>
+<input class="w-full bg-white border-outline-variant rounded p-2 text-sm font-data-tabular focus:ring-primary focus:border-primary" type="text" value="840921-14-5583"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant/60">Gender</label>
+<select class="w-full bg-white border-outline-variant rounded p-2 text-sm focus:ring-primary focus:border-primary">
+<option selected="">Male</option>
+<option>Female</option>
+</select>
+</div>
+<div class="space-y-1">
+<label class="font-label-caps text-label-caps text-on-surface-variant/60">Age</label>
+<input class="w-full bg-white border-outline-variant rounded p-2 text-sm font-data-tabular focus:ring-primary focus:border-primary" type="text" value="40"/>
+</div>
+<div class="space-y-1 col-span-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant/60">Admission Date</label>
+<input class="w-full bg-white border-outline-variant rounded p-2 text-sm font-data-tabular focus:ring-primary focus:border-primary" type="text" value="2024-09-12 08:45 AM"/>
+</div>
+</div>
+</section>
+<!-- C. CLINICAL CODING (KKM SMRP) -->
+<section class="space-y-4">
+<div class="flex items-center justify-between">
+<h3 class="font-title-sm text-title-sm text-on-surface">KKM SMRP Integration Module (PD301)</h3>
+<button class="text-primary text-[11px] font-bold flex items-center gap-1 hover:underline">
+<span class="material-symbols-outlined text-[14px]">add</span>
+                            Add Secondary Diagnosis
+                        </button>
+</div>
+<!-- MAIN DIAGNOSIS -->
+<div class="relative border-2 border-primary-fixed p-5 rounded-xl bg-primary/5">
+<div class="absolute -top-3 right-4 bg-primary text-white text-[10px] font-bold px-3 py-0.5 rounded-full">AI Generated • 98.4% Confidence</div>
+<div class="flex items-start gap-4">
+<div class="bg-primary text-white font-code-icd text-[18px] px-4 py-3 rounded-lg shadow-sm">5A11</div>
+<div class="flex-1 space-y-3">
+<label class="font-label-caps text-label-caps text-primary">Main Diagnosis Description</label>
+<textarea class="w-full border-outline-variant rounded text-sm bg-white focus:ring-primary" rows="2">Hypertension-related secondary nephropathy with mild progressive decline in renal filtration capacity.</textarea>
+</div>
+</div>
+</div>
+<!-- OTHER DIAGNOSES -->
+<div class="space-y-3">
+<div class="flex items-center gap-4 bg-surface-container p-4 rounded-xl border border-outline-variant">
+<div class="font-code-icd text-sm font-bold bg-white text-on-surface px-3 py-2 border border-outline-variant rounded">BA41.1</div>
+<div class="flex-1 text-sm font-medium text-on-surface-variant">Acute Myocardial Infarction, Subsequent</div>
+<div class="bg-primary-fixed/30 text-on-primary-fixed-variant text-[10px] px-2 py-1 rounded font-bold uppercase">Static Match</div>
+</div>
+<!-- User Modified Highlight -->
+<div class="flex items-center gap-4 bg-tertiary-fixed-dim/20 p-4 rounded-xl border border-tertiary/20">
+<div class="font-code-icd text-sm font-bold bg-white text-on-surface px-3 py-2 border border-tertiary-container rounded">ED90.1</div>
+<input class="flex-1 text-sm font-medium text-on-surface-variant bg-transparent border-none focus:ring-0" type="text" value="Secondary Hyperlipidemia, Type IV"/>
+<div class="bg-tertiary text-white text-[10px] px-2 py-1 rounded font-bold uppercase">User Modified</div>
+</div>
+</div>
+</section>
+<!-- D. VALIDATION ALERTS -->
+<section class="bg-error-container/20 border-l-4 border-error p-4 rounded-r-xl flex gap-3 items-start">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+<div>
+<h4 class="font-bold text-error text-[13px]">SMRP Validation Flag: Rule Mismatch Detected</h4>
+<p class="text-[12px] text-on-surface-variant mt-1">Diagnosis '5A11' requires matching ICD-11 Kidney Function records for automated approval. Score: 0.72. Manual audit requested.</p>
+</div>
+</section>
+<div class="h-24"></div> <!-- Spacer for sticky footer -->
+</div>
+<!-- E. FOOTER (Sticky) -->
+<div class="mt-auto bg-white border-t border-outline-variant px-6 py-4 flex items-center justify-between shadow-[0_-4px_12px_rgba(0,0,0,0.03)]">
+<div class="flex items-center gap-3">
+<button class="px-4 py-2 border border-error text-error font-title-sm text-title-sm rounded hover:bg-error/5 transition-colors">
+                        Reject / Re-run
+                    </button>
+<button class="px-4 py-2 border border-outline text-on-surface-variant font-title-sm text-title-sm rounded hover:bg-slate-50 transition-colors">
+                        Escalate Node
+                    </button>
+</div>
+<button class="bg-primary-container text-on-primary-container px-6 py-3 rounded-lg font-bold flex items-center gap-2 hover:opacity-90 transition-transform active:scale-95 shadow-md">
+<span class="material-symbols-outlined">send</span>
+                    Approve &amp; Submit to SMRP Portal
+                </button>
+</div>
+</section>
+</main>
+<!-- Global Interactions Script -->
+<script>
+        // Simple micro-interaction for cards
+        document.querySelectorAll('.rounded-xl').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-1px)';
+                card.style.transition = 'transform 0.2s ease-out';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Simulating node pulse
+        setInterval(() => {
+            const activeNode = document.querySelector('.pulse-active');
+            if (activeNode) {
+                activeNode.classList.toggle('opacity-80');
+            }
+        }, 1000);
+    </script>
+</body></html>
