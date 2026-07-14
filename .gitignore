@@ -17,7 +17,6 @@ opencode.jsonc
 .specstory/
 .windsurfrules
 DESIGN.md
-code.html
-screen.png
-package-lock.json
 
+# Graphify
+graphify-out/

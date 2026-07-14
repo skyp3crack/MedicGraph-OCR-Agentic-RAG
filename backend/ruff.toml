@@ -1,0 +1,23 @@
+# Ruff linter configuration for MedicGraph backend
+line-length = 120
+target-version = "py312"
+
+[lint]
+# Enable recommended rules
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort (import ordering)
+]
+
+# Ignore rules that conflict with the existing codebase style
+ignore = [
+    "E501",  # line too long (handled by line-length setting)
+    "E402",  # module level import not at top of file (needed for env setup)
+    "F401",  # imported but unused (some re-exports are intentional)
+]
+
+[lint.per-file-ignores]
+"test/*" = ["E501", "F401", "F811"]
+"conftest.py" = ["E402", "F401"]
