@@ -459,11 +459,12 @@ This constraint ensures the LLM never fabricates medical information — a criti
 | **Agentic AI Modules** | ✅ Working | LangGraph ingestion flow with HITL interrupt |
 | **Frontend UI** | ✅ Working | Complete clinician dashboard, chat chatbot, and validation portal |
 | **Frontend ↔ Backend** | ✅ Working | Connected with JWT Bearer auth integration |
-| **Scanned PDF OCR** | 🔶 Partial | Code scaffolded; active fallback is ready |
+| **Scanned PDF OCR** | ✅ Working | Active pdf2image + pytesseract fallback and quality metrics calculation |
 | **Authentication** | ✅ Working | JWT auth with secure password validator, IP rate limits, and roles |
 | **Docker Support** | ✅ Working | Multi-stage Dockerfiles + Compose stack orchestration |
-| **Unit Tests** | ✅ Working | 26 automated unit/integration tests running under pytest |
+| **Unit Tests** | ✅ Working | 29 automated unit/integration tests running under pytest |
 | **CI/CD Pipeline** | ✅ Working | GitHub Actions workflow executing build, test, lint, and docker checks |
+
 
 ---
 
