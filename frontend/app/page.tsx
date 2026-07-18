@@ -353,14 +353,14 @@ export default function Home() {
           </div>
           <a
             className="text-primary-fixed-dim font-bold border-l-4 border-primary-fixed pl-4 flex items-center gap-3 py-3 hover:bg-surface-variant/10 transition-colors duration-200"
-            href="#"
+            href="/"
           >
             <span className="material-symbols-outlined text-sm">map_pin_review</span>
             <span className="text-body-md">Pipeline Overview</span>
           </a>
           <a
             className="text-surface-variant flex items-center gap-3 px-6 py-3 hover:bg-surface-variant/10 hover:text-primary-fixed-dim transition-colors duration-200"
-            href="#"
+            href="/audit"
           >
             <span className="material-symbols-outlined text-sm">batch_prediction</span>
             <span className="text-body-md">Active Batches</span>

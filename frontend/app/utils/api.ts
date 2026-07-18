@@ -276,11 +276,18 @@ export async function getDocumentStatus(
   return response.json();
 }
 
+export interface PaginatedAuditLogs {
+  total: number;
+  page: number;
+  limit: number;
+  logs: AuditLogEntry[];
+}
+
 /**
- * Retrieve historical audit logs (secured, returns de-identified logs)
+ * Retrieve historical audit logs (secured, returns de-identified logs, paginated)
  */
-export async function fetchAuditLogs(): Promise<AuditLogEntry[]> {
-  const response = await fetch(`${API_BASE_URL}/api/audit/logs`, {
+export async function fetchAuditLogs(page = 1, limit = 20): Promise<PaginatedAuditLogs> {
+  const response = await fetch(`${API_BASE_URL}/api/audit/logs?page=${page}&limit=${limit}`, {
     headers: getHeaders(),
   });
   if (!response.ok) {
@@ -289,3 +296,4 @@ export async function fetchAuditLogs(): Promise<AuditLogEntry[]> {
   }
   return response.json();
 }
+

@@ -425,26 +425,36 @@ async def get_document_status(document_id: str, current_user: User = Depends(get
 
 @router.get("/audit/logs")
 async def get_audit_logs(
+    page: int = 1,
+    limit: int = 20,
     current_user: User = Depends(require_role("clinician", "admin")),
     db: Session = Depends(get_db)
 ):
     """Retrieve historical clinician audit action logs (strictly de-identified)."""
     try:
-        logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).all()
-        return [
-            {
-                "id": log.id,
-                "document_id": log.document_id,
-                "clinician_email": log.clinician_email,
-                "action": log.action,
-                "timestamp": log.timestamp.isoformat() if log.timestamp else None,
-                "payload": json.loads(log.payload) if log.payload else {}
-            }
-            for log in logs
-        ]
+        total = db.query(AuditLog).count()
+        offset = (page - 1) * limit
+        logs = db.query(AuditLog).order_by(AuditLog.timestamp.desc()).offset(offset).limit(limit).all()
+        return {
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "logs": [
+                {
+                    "id": log.id,
+                    "document_id": log.document_id,
+                    "clinician_email": log.clinician_email,
+                    "action": log.action,
+                    "timestamp": log.timestamp.isoformat() if log.timestamp else None,
+                    "payload": json.loads(log.payload) if log.payload else {}
+                }
+                for log in logs
+            ]
+        }
     except Exception as e:
         logger.error(f"Failed to fetch audit logs: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch audit logs: {e}")
+
 
 
 @router.get("/health", response_model=HealthResponse)

@@ -127,8 +127,11 @@ def test_protected_endpoint_with_token(auth_client):
     client, token, user = auth_client
     response = client.get("/api/audit/logs")
     assert response.status_code == 200
-    logs = response.json()
-    assert isinstance(logs, list)
+    res = response.json()
+    assert "total" in res
+    assert "logs" in res
+    assert isinstance(res["logs"], list)
+
 
 
 def test_rbac_denies_non_clinician(client, test_db):
