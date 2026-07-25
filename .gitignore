@@ -6,8 +6,35 @@ SpringO_guide.md
 dist/
 build/
 .DS_Store
+Thumbs.db
 
 .obsidian/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Node.js
+node_modules/
+
+# Testing / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Databases
+*.db
+*.sqlite3
+
+# Vector store / Uploads
+uploads/
+chroma_db/
 
 # AI artifacts
 AGENTS.md
@@ -16,7 +43,6 @@ opencode.json
 opencode.jsonc
 .specstory/
 .windsurfrules
-DESIGN.md
 
 # Graphify
 graphify-out/
