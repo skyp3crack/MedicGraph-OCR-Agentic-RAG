@@ -57,7 +57,7 @@ export default function SignInPage() {
   // Show nothing while checking auth state
   if (isLoading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
+      <div className="h-full w-full flex items-center justify-center bg-background">
         <div className="w-10 h-10 rounded-full border-4 border-outline-variant border-t-primary animate-spin" />
       </div>
     );
@@ -66,7 +66,7 @@ export default function SignInPage() {
   if (isAuthenticated) return null;
 
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-background p-4 md:p-6 overflow-y-auto font-sans">
+    <div className="h-full w-full flex items-center justify-center bg-background p-4 md:p-6 overflow-y-auto font-sans">
       <Card 
         className={`w-full max-w-[450px] md:max-w-[850px] border border-outline-variant/40 shadow-xl overflow-hidden rounded-2xl transition-all duration-700 ease-out ${
           mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"

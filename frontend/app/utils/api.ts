@@ -2,6 +2,8 @@
  * API client to interact with the FastAPI backend.
  */
 
+import { IS_DEMO, demoAuth, demoEngine } from "./demo";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export interface UploadResponse {
@@ -99,6 +101,8 @@ function getHeaders(extraHeaders: Record<string, string> = {}): Record<string, s
  * Call backend sign in endpoint
  */
 export async function loginApi(email: string, password: string): Promise<AuthResponse> {
+  if (IS_DEMO) return demoAuth.signin(email, password);
+
   const response = await fetch(`${API_BASE_URL}/api/auth/signin`, {
     method: "POST",
     headers: {
@@ -119,6 +123,8 @@ export async function loginApi(email: string, password: string): Promise<AuthRes
  * Call backend sign up endpoint
  */
 export async function signupApi(email: string, password: string, name: string): Promise<AuthResponse> {
+  if (IS_DEMO) return demoAuth.signup(email, password, name);
+
   const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
     method: "POST",
     headers: {
@@ -140,6 +146,8 @@ export async function signupApi(email: string, password: string, name: string): 
  * @param file The PDF file to upload
  */
 export async function uploadPdf(file: File): Promise<UploadResponse> {
+  if (IS_DEMO) return demoEngine.upload(file);
+
   const formData = new FormData();
   formData.append("file", file);
 
@@ -166,6 +174,8 @@ export async function queryDocument(
   documentId: string,
   question: string
 ): Promise<QueryResponse> {
+  if (IS_DEMO) return demoEngine.query(documentId, question);
+
   const response = await fetch(`${API_BASE_URL}/api/query`, {
     method: "POST",
     headers: getHeaders({
@@ -189,6 +199,8 @@ export async function queryDocument(
  * Fetch health status of the backend
  */
 export async function fetchHealth(): Promise<HealthResponse> {
+  if (IS_DEMO) return demoEngine.health();
+
   const response = await fetch(`${API_BASE_URL}/api/health`);
   if (!response.ok) {
     throw new Error("Backend service health check failed.");
@@ -203,6 +215,8 @@ export async function fetchHealth(): Promise<HealthResponse> {
 export async function extractClinicalData(
   documentId: string
 ): Promise<ClinicalExtractionResponse> {
+  if (IS_DEMO) return demoEngine.extract(documentId);
+
   const response = await fetch(`${API_BASE_URL}/api/extract`, {
     method: "POST",
     headers: getHeaders({
@@ -233,6 +247,8 @@ export async function submitAuditAction(
   action: "approve" | "reject" | "escalate",
   payload?: any
 ): Promise<AuditActionResponse> {
+  if (IS_DEMO) return demoEngine.auditAction(documentId, action, payload);
+
   const response = await fetch(`${API_BASE_URL}/api/audit/action`, {
     method: "POST",
     headers: getHeaders({
@@ -266,6 +282,8 @@ export interface DocumentStatusResponse {
 export async function getDocumentStatus(
   documentId: string
 ): Promise<DocumentStatusResponse> {
+  if (IS_DEMO) return demoEngine.status(documentId);
+
   const response = await fetch(`${API_BASE_URL}/api/documents/${documentId}/status`, {
     headers: getHeaders(),
   });
@@ -287,6 +305,8 @@ export interface PaginatedAuditLogs {
  * Retrieve historical audit logs (secured, returns de-identified logs, paginated)
  */
 export async function fetchAuditLogs(page = 1, limit = 20): Promise<PaginatedAuditLogs> {
+  if (IS_DEMO) return demoEngine.auditLogs(page, limit);
+
   const response = await fetch(`${API_BASE_URL}/api/audit/logs?page=${page}&limit=${limit}`, {
     headers: getHeaders(),
   });
@@ -297,3 +317,10 @@ export async function fetchAuditLogs(page = 1, limit = 20): Promise<PaginatedAud
   return response.json();
 }
 
+/**
+ * De-identified text of an ingested document, for the "Extracted Layout Text" tab.
+ * Only the static demo can provide it; against the real backend this resolves to null.
+ */
+export async function fetchDocumentText(documentId: string): Promise<string | null> {
+  return IS_DEMO ? demoEngine.documentText(documentId) : null;
+}

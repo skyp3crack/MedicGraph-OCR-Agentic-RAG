@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "dev:demo": "node scripts/build-demo.mjs dev",
+    "build:demo": "node scripts/build-demo.mjs"
   },
   "dependencies": {
     "@heroui/react": "^3.2.1",
@@ -22,6 +24,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
+    "pdfjs-dist": "^4.10.38",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./contexts/AuthContext";
+import DemoBanner from "./components/DemoBanner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -34,7 +35,12 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <div className="h-screen w-full flex flex-col">
+            <DemoBanner />
+            <div className="flex-1 min-h-0">{children}</div>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );
