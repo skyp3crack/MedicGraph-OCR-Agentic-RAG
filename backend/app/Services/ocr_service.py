@@ -8,11 +8,11 @@ Supports both selectable-text PDFs (via pypdf) and scanned PDFs (via pytesseract
 import logging
 import os
 import sys
-from typing import Dict, Any, Tuple, Union
+from typing import Any, Dict, Tuple, Union
 
-from pypdf import PdfReader
 import pytesseract
 from pdf2image import convert_from_path
+from pypdf import PdfReader
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class EmptyPDFError(Exception):
 
 
 def extract_text_from_pdf(
-    pdf_path: str, 
+    pdf_path: str,
     return_metrics: bool = False
 ) -> Union[str, Tuple[str, Dict[str, Any]]]:
     """
@@ -47,7 +47,7 @@ def extract_text_from_pdf(
 
     Args:
         pdf_path: Absolute or relative path to the PDF file.
-        return_metrics: If True, returns a tuple containing the extracted text 
+        return_metrics: If True, returns a tuple containing the extracted text
                         and a dictionary of extraction quality metrics.
 
     Returns:
@@ -100,7 +100,7 @@ def extract_text_from_pdf(
                         page_confs = [int(c) for c in data.get("conf", []) if int(c) != -1]
                         if page_confs:
                             confidences.extend(page_confs)
-                        
+
                         logger.debug(f"Page {page_num}/{total_pages}: extracted {len(ocr_text)} characters via OCR")
                 except Exception as ocr_err:
                     logger.error(f"OCR failed for page {page_num}: {ocr_err}")
