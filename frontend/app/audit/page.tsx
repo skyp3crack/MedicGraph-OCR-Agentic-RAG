@@ -55,7 +55,7 @@ export default function AuditPage() {
 
   if (isLoading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
+      <div className="h-full w-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 rounded-full border-4 border-outline-variant border-t-primary animate-spin" />
           <p className="text-sm text-on-surface-variant font-medium">Loading clinical workspace...</p>
@@ -71,7 +71,7 @@ export default function AuditPage() {
   const endEntry = Math.min(page * limit, total);
 
   return (
-    <div className="h-screen w-screen flex flex-col md:flex-row overflow-hidden bg-background">
+    <div className="h-full w-full flex flex-col md:flex-row overflow-hidden bg-background">
       {/* MOBILE HEADER */}
       <header className="md:hidden flex items-center justify-between px-6 py-4 bg-inverse-surface text-on-primary border-b border-outline-variant/10">
         <div className="flex items-center gap-2">

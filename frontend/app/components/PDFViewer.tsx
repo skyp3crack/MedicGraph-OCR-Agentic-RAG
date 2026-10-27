@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Tabs, TabList, Tab, Spinner, Button } from "@heroui/react";
+import { IS_DEMO } from "../utils/demo";
 
 interface PDFViewerProps {
   file: File | null;
@@ -57,6 +58,12 @@ export default function PDFViewer({
         alert("Only PDF files are supported.");
       }
     }
+  };
+
+  const handleUseSample = async () => {
+    const response = await fetch("/demo/sample-medical-report.pdf");
+    const blob = await response.blob();
+    onFileSelect(new File([blob], "sample-medical-report.pdf", { type: "application/pdf" }));
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,6 +156,20 @@ export default function PDFViewer({
             >
               Browse Files
             </Button>
+            {IS_DEMO && (
+              <>
+                <Button
+                  variant="outline"
+                  onPress={handleUseSample}
+                  className="mt-3 font-bold text-xs md:text-sm px-6 h-10"
+                >
+                  Use the sample medical report
+                </Button>
+                <p className="mt-3 text-[10px] text-on-surface-variant/60 max-w-[260px]">
+                  The sample is a synthetic report. Your own PDFs are read in this browser and are never uploaded.
+                </p>
+              </>
+            )}
             <input
               ref={fileInputRef}
               type="file"

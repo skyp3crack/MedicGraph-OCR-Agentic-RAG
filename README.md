@@ -28,6 +28,7 @@
 - [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
 - [Project Structure](#-project-structure)
+- [Static Demo](#-static-demo)
 - [Getting Started](#-getting-started)
   - [Prerequisites](#prerequisites)
   - [Backend Setup](#1-backend-setup)
@@ -194,6 +195,33 @@ MedicGraph-OCR-Agentic-RAG/
 ├── docker-compose.yml                # Multi-service container orchestration config
 └── README.md
 ```
+
+---
+
+## 🌐 Static Demo
+
+The Next.js frontend can also run as a **fully static site with no backend**, so the whole workflow can be tried from a link. In this mode the API client (`frontend/app/utils/api.ts`) talks to an in-browser engine (`frontend/app/utils/demo/`) instead of FastAPI.
+
+| Stage / feature | Live stack | Static demo |
+|---|---|---|
+| PDF text extraction | pypdf + Tesseract fallback | pdf.js in the browser. Image-only PDFs fall back to the bundled sample report |
+| Structured extraction | Gemini prompt | Rule-based reader returning the same schema (demographics, ICD-11 codes, validation alerts) |
+| PHI scrubbing | `clean_phi` | The same rules ported to TypeScript, checked against the cases in `backend/test/test_phi_scrubbing.py` |
+| Chunking | LangChain `RecursiveCharacterTextSplitter` | Same algorithm (1000 / 200) |
+| Retrieval + answers | ChromaDB + Gemini | BM25 ranking over the de-identified chunks, with extractive answers and page citations. It declines questions the report cannot answer |
+| LangGraph workflow | SQLite checkpointer, interrupt before `human_review` | Same node order and status values, so the stepper behaves identically |
+| Auth, audit log | FastAPI + SQLite | Accounts and audit entries in `localStorage` |
+
+Sign in with `admin@medicograph.dev` / `admin123`, then use **Use the sample medical report** or drop in your own PDF. PDFs are read in the browser and are never uploaded. The ICD-11 table in the demo is illustrative and is not a clinical coding tool.
+
+```bash
+cd frontend
+npm ci
+npm run dev:demo      # dev server in demo mode
+npm run build:demo    # static export in frontend/out
+```
+
+**Deploy on Vercel:** import the repository and set **Root Directory** to `frontend`. `frontend/vercel.json` runs `npm run build:demo` and serves the `out` folder, so no environment variables are needed. The regular `npm run build` and the Docker image are unchanged and still target the FastAPI backend.
 
 ---
 

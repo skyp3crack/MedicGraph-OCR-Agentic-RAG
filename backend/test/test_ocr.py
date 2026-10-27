@@ -2,9 +2,11 @@
 Unit tests for the OCR Service and quality metrics.
 """
 
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pytest
-from app.Services.ocr_service import extract_text_from_pdf, PDFExtractionError, EmptyPDFError
+
+from app.Services.ocr_service import EmptyPDFError, PDFExtractionError, extract_text_from_pdf
 
 
 @patch("app.Services.ocr_service.PdfReader")
@@ -13,7 +15,7 @@ def test_extract_text_selectable_only(mock_pdf_reader):
     # Mock standard PDF pages
     mock_page1 = MagicMock()
     mock_page1.extract_text.return_value = "Hello Selectable World"
-    
+
     mock_reader_instance = MagicMock()
     mock_reader_instance.pages = [mock_page1]
     mock_pdf_reader.return_value = mock_reader_instance
@@ -37,7 +39,7 @@ def test_extract_text_scanned_fallback(mock_tesseract, mock_convert, mock_pdf_re
     # Page 1 has no selectable text
     mock_page1 = MagicMock()
     mock_page1.extract_text.return_value = ""
-    
+
     mock_reader_instance = MagicMock()
     mock_reader_instance.pages = [mock_page1]
     mock_pdf_reader.return_value = mock_reader_instance
@@ -63,13 +65,13 @@ def test_empty_pdf_error(mock_pdf_reader):
     """Verify EmptyPDFError is raised when no text can be found."""
     mock_page1 = MagicMock()
     mock_page1.extract_text.return_value = "   "
-    
+
     mock_reader_instance = MagicMock()
     mock_reader_instance.pages = [mock_page1]
     mock_pdf_reader.return_value = mock_reader_instance
 
     with patch("os.path.exists", return_value=True), \
          patch("app.Services.ocr_service.convert_from_path", return_value=[]):
-        
+
         with pytest.raises(EmptyPDFError):
             extract_text_from_pdf("dummy.pdf")

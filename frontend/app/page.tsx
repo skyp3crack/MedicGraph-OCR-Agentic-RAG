@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PDFViewer from "./components/PDFViewer";
 import HITLDashboard, { HITLData } from "./components/HITLDashboard";
-import { uploadPdf, queryDocument, extractClinicalData, submitAuditAction, getDocumentStatus, SourceChunk } from "./utils/api";
+import { uploadPdf, queryDocument, extractClinicalData, submitAuditAction, getDocumentStatus, fetchDocumentText, SourceChunk } from "./utils/api";
 import { useAuth } from "./contexts/AuthContext";
 import { Dropdown, DropdownTrigger, DropdownPopover, DropdownMenu, DropdownItem, TextField, InputGroup, Button, Label } from "@heroui/react";
 
@@ -79,7 +79,7 @@ export default function Home() {
   // Show loading spinner while checking auth
   if (isLoading) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
+      <div className="h-full w-full flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 rounded-full border-4 border-outline-variant border-t-primary animate-spin" />
           <p className="text-sm text-on-surface-variant font-medium">Loading clinical workspace...</p>
@@ -131,7 +131,9 @@ export default function Home() {
             };
             setClinicalData(formatted);
             
+            const documentText = await fetchDocumentText(docId);
             setExtractedText(
+              documentText ??
               `--- Extracted Document: ${filename} ---\n` +
               `UUID: ${docId}\n` +
               `Status: Paused at human_review node.\n\n` +
@@ -294,7 +296,7 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen w-full overflow-hidden flex flex-col md:flex-row font-sans">
+    <div className="h-full w-full overflow-hidden flex flex-col md:flex-row font-sans">
       {/* MOBILE HEADER BAR - Visible on mobile only */}
       <header className="md:hidden w-full h-14 bg-slate-900 text-white flex items-center justify-between px-4 z-40 shadow-sm flex-shrink-0">
         <div className="flex items-center gap-2">
